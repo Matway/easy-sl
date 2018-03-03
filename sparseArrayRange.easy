@@ -1,0 +1,294 @@
+"control" useFile
+"control" useFile
+
+SparseArrayInternal: {
+  makeIterator: [{
+    ITERATOR: {};
+    SPARSE_ARRAY_ITERATOR: {};
+
+    data:
+    index:
+    step:
+    ;;;
+
+    get: [index data @] func;
+    set: [index data !] func;
+    next: [data index step + step SparseArrayInternal.makeIterator] func;
+    prev: [data index step - step SparseArrayInternal.makeIterator] func;
+  }] func;
+
+  makeRange: [
+    data:firstIndex:afterLastIndex:step:;;;;
+    data () same [
+      TRUE
+    ] [
+      firstIndex 0 < ~
+      afterLastIndex step - data fieldCount < and
+      firstIndex afterLastIndex < and
+      afterLastIndex firstIndex - step mod 0 = and
+    ] if
+  ] [{
+    RANGE: {};
+    SPARSE_ARRAY_RANGE: {};
+
+    data:firstIndex:afterLastIndex:step:;;;;
+
+    empty: [data () same] func;
+    single: [empty ~ firstIndex afterLastIndex step - = and] func;
+    getSize: [data () same [0] [afterLastIndex firstIndex - step /] if] func;
+
+    first: [firstIndex data @] func;
+    last: [afterLastIndex step - data @] func;
+    firstIter: [data firstIndex step SparseArrayInternal.makeIterator] func;
+    lastIter: [data afterLastIndex step - step SparseArrayInternal.makeIterator] func;
+    endIter: [data afterLastIndex step SparseArrayInternal.makeIterator] func;
+
+    at: [
+      index:;
+      data () same [
+        FALSE
+      ] [
+        index 0 < ~
+        index step * afterLastIndex firstIndex - < and
+      ] if
+    ] [
+      step * firstIndex + data @
+    ] pfunc;
+
+    set: [
+      index:;
+      data () same [
+        FALSE
+      ] [
+        index 0 < ~
+        index step * afterLastIndex firstIndex - < and
+      ] if
+    ] [
+      step * firstIndex + data !
+    ] pfunc;
+
+    unheadIter: [empty ~] [
+      data firstIndex step SparseArrayInternal.makeIterator
+      data firstIndex step + afterLastIndex step SparseArrayInternal.makeRange
+    ] pfunc;
+
+    unheadIter: [single] [
+      data firstIndex step SparseArrayInternal.makeIterator
+      () 0 0 step SparseArrayInternal.makeRange
+    ] pfunc;
+
+    unhead: [empty ~] [
+      firstIndex data @
+      data firstIndex step + afterLastIndex step SparseArrayInternal.makeRange
+    ] pfunc;
+
+    unhead: [single] [
+      firstIndex data @
+      () 0 0 step SparseArrayInternal.makeRange
+    ] pfunc;
+
+    untailIter: [empty ~] [
+      data firstIndex afterLastIndex step - step SparseArrayInternal.makeRange
+      data afterLastIndex step - step SparseArrayInternal.makeIterator
+    ] pfunc;
+
+    untailIter: [single] [
+      () 0 0 step SparseArrayInternal.makeRange
+      data afterLastIndex step - step SparseArrayInternal.makeIterator
+    ] pfunc;
+
+    untail: [empty ~] [
+      data firstIndex afterLastIndex - step SparseArrayInternal.makeRange
+      last
+    ] pfunc;
+
+    untail: [single] [
+      () 0 0 step SparseArrayInternal.makeRange
+      last
+    ] pfunc;
+
+    makeRange: [
+      data firstIndex afterLastIndex step SparseArrayInternal.makeRange
+    ] func;
+
+    subRange: [
+      newFirstIndex:newAfterLastIndex:;;
+      data () same [
+        FALSE
+      ] [
+        newFirstIndex 0 < ~
+        newAfterLastIndex afterLastIndex firstIndex - > ~ and
+        newFirstIndex newAfterLastIndex < and
+      ] if
+    ] [
+      newFirstIndex:newAfterLastIndex:;;
+      data newFirstIndex step * firstIndex + newAfterLastIndex step * firstIndex + step SparseArrayInternal.makeRange
+    ] pfunc;
+
+    heapSort: [
+      parent:[1 - 2 /] func;
+      left:[2 * 1 +] func;
+      right:[2 * 2 +] func;
+      isRoot:[0 =] func;
+      isLeft:[1 and 1 =] func;
+      isRight:[1 and 0 =] func;
+      iSwap:[i:j:;; tmp:i at; j at i set tmp j set] func;
+
+      i: 1;
+      [i getSize <] [
+        j:i;
+        [j isRoot ~] [
+          p: j parent;
+          j at p at > [j p iSwap] when
+          p !j
+        ] while
+        i 1 + !i
+      ] while
+
+      i: getSize 1 -;
+      [i 0 < ~] [
+        j:0;
+        j i iSwap
+        [
+          l: j left;
+          r: j right;
+
+          l i < [
+            r i < [l at r at >] [TRUE] if [
+              l at j at > [j l iSwap l !j TRUE] [FALSE] if
+            ] [
+              r at j at > [j r iSwap r !j TRUE] [FALSE] if
+            ] if
+          ] [
+            FALSE
+          ] if
+        ] loop
+        i 1 - !i
+      ] while
+
+      makeRange # return itself
+    ] func;
+
+    heapSort: [single] [makeRange] pfunc;
+    heapSort: [empty] [makeRange] pfunc;
+    sort: [heapSort] func;
+  }] pfunc;
+
+  makeRange: [
+    it1:it2:step:;;;
+    it1 1 fieldName "SPARSE_ARRAY_ITERATOR" =
+    it2 1 fieldName "SPARSE_ARRAY_ITERATOR" = and
+    it1.data it2.data is and
+  ] [
+    it1:it2:step:;;;
+    it1.data it1.index it2.index step makeRange
+  ] pfunc;
+
+  arrayEnum: [
+    eachArrayObject:eachArrayBody:;;
+    i: eachArrayObject.firstIndex;
+    [
+      i eachArrayObject.data @ @eachArrayBody call [
+        i eachArrayObject.step + !i
+        i eachArrayObject.afterLastIndex <
+      ] [
+        FALSE
+      ] if
+    ] loop
+  ] func;
+
+  arrayEnum: [drop .single] [SparseArrayInternal.makeRange
+    eachArrayObject:eachArrayBody:;;
+    eachArrayObject.firstIndex eachArrayObject.data @ @eachArrayBody call drop
+  ] pfunc;
+
+  arrayEnum: [drop .empty] [
+    drop drop
+  ] pfunc;
+
+  arrayEnumIter: [
+    eachArrayObject:eachArrayBody:;;
+    i: eachArrayObject.firstIndex;
+    [
+      eachArrayObject.data i eachArrayObject.step SparseArrayInternal.makeIterator @eachArrayBody call [
+        i eachArrayObject.step + !i
+        i eachArrayObject.afterLastIndex <
+      ] [
+        FALSE
+      ] if
+    ] loop
+  ] func;
+
+  arrayEnumIter: [drop .single] [
+    eachArrayObject:eachArrayBody:;;
+    eachArrayObject.data eachArrayObject.firstIndex eachArrayObject.step SparseArrayInternal.makeIterator @eachArrayBody call drop
+  ] pfunc;
+
+  arrayEnumIter: [drop .empty] [
+    drop drop
+  ] pfunc;
+};
+
+enumIter: [drop 1 fieldName "SPARSE_ARRAY_RANGE" =] [SparseArrayInternal.arrayEnumIter] pfunc;
+enum:     [drop 1 fieldName "SPARSE_ARRAY_RANGE" =] [SparseArrayInternal.arrayEnum]     pfunc;
+
+@:          [1 fieldName "SPARSE_ARRAY_RANGE" =] [.at] pfunc;
+!:          [1 fieldName "SPARSE_ARRAY_RANGE" =] [.set] pfunc;
+fieldCount: [1 fieldName "SPARSE_ARRAY_RANGE" =] [.getSize] pfunc;
+
+@:          [1 fieldName "SPARSE_ARRAY_ITERATOR" =] [0.NOT_ALLOWED_FOR_ARRAY_ITERATOR] pfunc;
+!:          [1 fieldName "SPARSE_ARRAY_ITERATOR" =] [0.NOT_ALLOWED_FOR_ARRAY_ITERATOR] pfunc;
+fieldCount: [1 fieldName "SPARSE_ARRAY_ITERATOR" =] [0.NOT_ALLOWED_FOR_ARRAY_ITERATOR] pfunc;
+
+=: [
+  it1:it2:;;
+  it1 1 fieldName "SPARSE_ARRAY_ITERATOR" =
+  it2 1 fieldName "SPARSE_ARRAY_ITERATOR" = and
+  it1.data it2.data is and
+] [
+  .index swap .index =
+] pfunc;
+
+<: [
+  it1:it2:;;
+  it1 1 fieldName "SPARSE_ARRAY_ITERATOR" =
+  it2 1 fieldName "SPARSE_ARRAY_ITERATOR" = and
+  it1.data it2.data is and
+] [
+  .index swap .index >
+] pfunc;
+
+>: [
+  it1:it2:;;
+  it1 1 fieldName "SPARSE_ARRAY_ITERATOR" =
+  it2 1 fieldName "SPARSE_ARRAY_ITERATOR" = and
+  it1.data it2.data is and
+] [
+  .index swap .index <
+] pfunc;
+
++: [
+  drop 1 fieldName "SPARSE_ARRAY_ITERATOR" =
+] [
+  it:n:;;
+  it.data it.index n it.step * + it.step SparseArrayInternal.makeIterator
+] pfunc;
+
+-: [
+  drop 1 fieldName "SPARSE_ARRAY_ITERATOR" =
+] [
+  it:n:;;
+  it.data it.index n it.step * - it.step SparseArrayInternal.makeIterator
+] pfunc;
+
+-: [
+  it1:it2:;;
+  it1 1 fieldName "SPARSE_ARRAY_ITERATOR" =
+  it2 1 fieldName "SPARSE_ARRAY_ITERATOR" = and
+  it1.data it2.data is and
+] [
+  it1:it2:;;
+  it1.index it2.index - it1.step /
+] pfunc;
+
+makeSparseRange: [SparseArrayInternal.makeRange] func;

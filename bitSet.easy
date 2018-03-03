@@ -1,0 +1,143 @@
+"control" useFile
+"algorithm" useFile
+
+BitSet: [{
+  BITSET: ();
+
+  getSize:;
+  dataSize: getSize 31 + 32 /;
+  data: 0n32 dataSize array;
+
+  at: [
+    index:;
+    index 0 < index getSize < ~ or [
+      0.INVALID_INDEX
+    ] when
+
+    subIndex: index 5 rshift;
+    bit: index 31 and;
+    mask: 1n32 bit lshift;
+    subIndex data @ mask and 0n32 = ~
+  ] func;
+
+  clear: [dataSize [0n32 i data !] times] func;
+
+  none: [
+    TRUE
+    dataSize 0 > [
+      i: 0;
+      [
+        i data @ 0n32 = [
+          i 1 + !i i dataSize <
+        ] [
+          drop FALSE FALSE
+        ] if
+      ] loop
+    ] when
+  ] func;
+
+  any: [none ~] func;
+
+  all: [
+    lastBits: getSize 31 and;
+    lastMask: lastBits 0 = [-1n32] [1n32 lastBits lshift 1n32 -] if;
+    TRUE
+    dataSize 0 > [
+      dataSize 1 > [
+        i: 0;
+        [
+          i data @ -1n32 = [
+            i 1 + !i i dataSize 1 - <
+          ] [
+            drop FALSE FALSE
+          ] if
+        ] loop
+      ] when
+
+      # if result
+      [
+        dataSize 1 - data @ lastMask =
+      ] [
+        FALSE
+      ] if
+
+    ] when
+
+  ] func;
+
+  set: [
+    index:;
+    index 0 < ~ index getSize < and
+  ] [
+    value:index:;;
+    subIndex: index 5 rshift;
+    bit: index 31 and;
+    mask: 1n32 bit lshift;
+    subIndex data @ value [mask or] [-1n32 mask - and] if subIndex data !
+  ] pfunc;
+
+  or=: [
+    .getSize getSize =
+  ] [
+    other:;
+    dataSize [
+      i data @ i other.data @ or i data !
+    ] times
+  ] pfunc;
+
+  and=: [
+    .getSize getSize =
+  ] [
+    other:;
+    dataSize [
+      i data @ i other.data @ and i data !
+    ] times
+  ] pfunc;
+
+  xor=: [
+    .getSize getSize =
+  ] [
+    other:;
+    dataSize [
+      i data @ i other.data @ xor i data !
+    ] times
+  ] pfunc;
+}] func;
+
+makeBitSet: [
+  data:result: BitSet;;
+  data range [TRUE swap result.set TRUE] enum
+  result
+] func;
+
+copy: ["BITSET" has] [
+  src:;
+  dst: src.getSize BitSet;
+  src.data copy dst.!data
+  dst
+] pfunc;
+
+@:          ["BITSET" has] [.at]               pfunc;
+!:          ["BITSET" has] [.set]              pfunc;
+or:         ["BITSET" has] [r: copy; r.or=  r] pfunc;
+and:        ["BITSET" has] [r: copy; r.and= r] pfunc;
+xor:        ["BITSET" has] [r: copy; r.xor= r] pfunc;
+fieldCount: ["BITSET" has] [.getSize]          pfunc;
+
+=: ["BITSET" has] [
+  set1:set2:;;
+  set1.getSize set2.getSize = ~ [
+    FALSE
+  ] [
+    i: 0;
+    result: TRUE;
+    [i set1.dataSize < result and] [
+      i set1.data @ i set2.data @ = ~ [
+        FALSE !result
+      ] when
+      i 1 + !i
+    ] while
+
+    result
+  ] if
+] pfunc;

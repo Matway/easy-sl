@@ -1,0 +1,862 @@
+"control" useFile
+"algorithm" useFile
+"arrayRange" useFile
+"sparseArrayRange" useFile
+
+AlgebraInternal: {
+  makeVectorByFields: [fieldCount =] [
+    VECTOR:data:;;
+    {
+      VECTOR: VECTOR;
+      data: data;
+
+      dimension: [
+        VECTOR
+      ] func;
+
+      isZero: [
+        result: TRUE;
+        i: 0;
+        [
+          el: i data @;
+          el 0 el cast = ~ [
+            FALSE !result
+            FALSE
+          ] [
+            i 1 + !i i VECTOR <
+          ] if
+        ] loop
+        result
+      ] func;
+
+      makeRange: [data range] func;
+      firstIter: [data range .firstIter] func;
+      lastIter:  [data range .lastIter ] func;
+      endIter:   [data range .endIter  ] func;
+    }
+  ] pfunc;
+
+  makeVectorByList: [l:; l fieldCount l makeVectorByFields] func;
+
+  v&n: [v:n:;; v 0 fieldName "VECTOR" = 0 v.data @ n same and] [
+    v:n:;;
+    v.VECTOR 1 + v.data copy n , makeVectorByFields
+  ] pfunc;
+
+  v&v: [v1:v2:;; v1 0 fieldName "VECTOR" = v2 0 fieldName "VECTOR" = and 0 v1.data @ 0 v2.data @ same and] [
+    v1:v2:;;
+    size: v1.VECTOR v2.VECTOR +;
+    result: size 0 v1.data @ size array makeVectorByFields;
+    sz1: v1.VECTOR;
+    sz1 [i v1.data @ i result.data !] times
+    v2.VECTOR [i v2.data @ i sz1 + result.data !] times
+    result
+  ] pfunc;
+
+  vslice: [
+    v:i:l:;;;
+    result: 0 v.data @ l Vector;
+    l [i l + v.data @ i result.data !] times
+    result
+  ] func;
+
+  v+v: [v1:v2:;; v1.VECTOR v2.VECTOR = 0 v1.data @ 0 v2.data @ same and] [
+    v1:v2:;;
+    r: v1 copy;
+    r.VECTOR [
+      i v1.data @ i v2.data @ + i r.data !
+    ] times
+    r
+  ] pfunc;
+
+  v-v: [v1:v2:;; v1.VECTOR v2.VECTOR = 0 v1.data @ 0 v2.data @ same and] [
+    v1:v2:;;
+    r: v1 copy;
+    r.VECTOR [
+      i v1.data @ i v2.data @ - i r.data !
+    ] times
+    r
+  ] pfunc;
+
+  v*: [dst:factor:;; dst 0 fieldName "VECTOR" = 0 dst.data @ factor same and] [
+    dst:factor:;;
+    dst.VECTOR dst.data [factor *] map makeVectorByFields
+  ] pfunc;
+
+  v=: [v1:v2:;; v1.VECTOR v2.VECTOR = 0 v1.data @ 0 v2.data @ same and] [
+    v1:v2:;;
+    result: TRUE;
+    eps: 1.0e-5 0 v1.data @ cast;
+    i: 0;
+    [
+      e1: i v1.data @;
+      e2: i v2.data @;
+      e1 e2 - abs eps e1 * abs > [
+        FALSE !result
+        FALSE
+      ] [
+        i 1 + !i i v1.VECTOR <
+      ] if
+    ] loop
+    result
+  ] pfunc;
+
+  enmax: [[abs swap abs max] reduce] func;
+  vmax: [0 fieldName "VECTOR" =] [.data enmax] pfunc;
+
+  vprint: [0 fieldName "VECTOR" =] [.data print LF print] pfunc;
+
+  makeMatrixByFields: [MATRIX:data:;; MATRIX.x MATRIX.y * data fieldCount =] [
+    MATRIX:data:;;
+    {
+      MATRIX: MATRIX;
+      data: data;
+      rows: [MATRIX.y] func;
+      columns: [MATRIX.x] func;
+      dimension: [(MATRIX.x MATRIX.y)] func;
+      size: [MATRIX.x MATRIX.y =] [MATRIX.x] pfunc;
+
+      row: [
+        index:;
+        vdata: () MATRIX.x array;
+        y: index MATRIX.x *;
+        MATRIX.x [y i + data @ i vdata !] times
+        MATRIX.x vdata AlgebraInternal.makeVectorByFields
+      ] func;
+
+      column: [
+        index:;
+        vdata: () MATRIX.y array;
+        x: index;
+        dx: MATRIX.x;
+        r: 0;
+        maxx: MATRIX.x MATRIX.y *;
+        [
+          x data @ r vdata !
+          r 1 + !r
+          x dx + !x
+          x maxx <
+        ] loop
+        MATRIX.y vdata AlgebraInternal.makeVectorByFields
+      ] func;
+
+      swapRows: [
+        index1:index2:;;
+        index1 index2 = ~ [
+          y1: index1 MATRIX.x *;
+          y2: index2 MATRIX.x *;
+          MATRIX.x [y1 i + data @ y2 i + data @ y1 i + data ! y2 i + data !] times
+        ] when
+      ] func;
+
+      swapColumns: [
+        index1:index2:;;
+        index1 index2 = ~ [
+          x1: index1;
+          x2: index2;
+          dx: MATRIX.x;
+          maxx: MATRIX.x MATRIX.y *;
+          [
+            x1 data @ x2 data @ x1 data ! x2 data !
+            x1 dx + !x1
+            x2 dx + !x2
+            x1 maxx <
+          ] loop
+        ] when
+      ] func;
+
+      rowRange: [
+        index:;
+        data index MATRIX.x * index 1 + MATRIX.x * ArrayInternal.makeRange
+      ] func;
+
+      columnRange: [
+        index:;
+        data index index MATRIX.x MATRIX.y * + MATRIX.x SparseArrayInternal.makeRange
+      ] func;
+
+      makeRange: [data range] func;
+      isSquare: [MATRIX.x MATRIX.y =] func;
+
+    }
+  ] pfunc;
+
+  mprint: [0 fieldName "MATRIX" =] [
+    m:;
+    "{" print LF print
+    m.MATRIX.y [
+      y: i m.MATRIX.x *;
+      "  " print
+      m.MATRIX.x [
+        y i + m.data @ print "," print
+      ] times
+      LF print
+    ] times
+    "}" print LF print
+  ] pfunc;
+
+  IdMatrix: [size:; size.x size.y =] [
+    value:size:;;
+    matrix: size 0 value cast size.x size.y * array makeMatrixByFields;
+    maxi: matrix.MATRIX.x matrix.MATRIX.y *;
+    di: matrix.MATRIX.x 1 +;
+    value: 1 0 matrix.data @ cast;
+    i: 0;
+    [i maxi <] [
+      value i matrix.data !
+      i di + !i
+    ] while
+    matrix
+  ] pfunc;
+
+  makeMatrixv: [
+    vectors:;
+    result: 0 0 vectors @ .data @ { x: 0 vectors @ .VECTOR; y: vectors fieldCount; } Matrix;
+    y: 0;
+    dy: result.MATRIX.x;
+    vectors fieldCount [
+      current: i vectors @;
+      current.VECTOR result.MATRIX.x = ~ ["Vectors must have same size" error] when
+      current.VECTOR [i current.data @ y i + result.data !] times
+      y dy + !y
+    ] times
+    result
+  ] func;
+
+  makeMatrixh: [
+    vectors:;
+    result: 0 0 vectors @ .data @ { x: vectors fieldCount; y: 0 vectors @ .VECTOR; } Matrix;
+    vectors fieldCount [
+      current: i vectors @;
+      current.VECTOR result.MATRIX.y = ~ ["Vectors must have same size" error] when
+      y: i;
+      dy: result.MATRIX.x;
+      current.VECTOR [i current.data @ y result.data ! y dy + !y] times
+    ] times
+    result
+  ] func;
+
+  m+=: [m1:m2:;; m1.MATRIX.x m2.MATRIX.x = m1.MATRIX.y m2.MATRIX.y = and 0 m1.data @ 0 m2.data @ same and] [
+    src:dst:;;
+    src.MATRIX.x src.MATRIX.y * [
+      i src.data @ i dst.data @ + i dst.data !
+    ] times
+  ] pfunc;
+
+  m+m: [r: copy; r m+= r] func;
+
+  m-=: [m1:m2:;; m1.MATRIX.x m2.MATRIX.x = m1.MATRIX.y m2.MATRIX.y = and 0 m1.data @ 0 m2.data @ same and] [
+    src:dst:;;
+    src.MATRIX.x src.MATRIX.y * [
+      i src.data @ i dst.data @ - i dst.data !
+    ] times
+  ] pfunc;
+
+  m-m: [r: copy; r m-= r] func;
+
+  m*m: [m1:m2:;; m1.MATRIX.x m2.MATRIX.y = 0 m1.data @ 0 m2.data @ same and] [
+    m1:m2:;;
+    result: {x:m2.MATRIX.x; y:m1.MATRIX.y;} 0 0 m1.data @ cast m2.MATRIX.x m1.MATRIX.y * array makeMatrixByFields;
+    m1.MATRIX.y [
+      y1:i m1.MATRIX.x *;
+      yr:i result.MATRIX.x *;
+      m2.MATRIX.y [
+        x1:i;
+        y2:x1 m2.MATRIX.x *;
+        d1:x1 y1 + m1.data @;
+        m2.MATRIX.x [
+          ir: yr i +;
+          d1 y2 i + m2.data @ * ir result.data @ + ir result.data !
+        ] times
+      ] times
+    ] times
+
+    result
+  ] pfunc;
+
+  makeDiagonalVectorList: [
+    v:;
+    # initilSquare Square B
+    swaps: 0;
+    fc: v fieldCount;
+    eps: 1.0e-5 0 0 v @ .data @ cast;
+    col: 0;
+    zero: 0.0 0 0 v @ .data @ cast;
+    [
+      maxf: 0.0 0 col v @ .data @ cast;
+      maxi: col;
+      x: col fc +;
+      fc x - [
+        y: i col +;
+        cur: x y v @ .data @ abs;
+        cur maxf > [cur !maxf y !maxi] when
+      ] times
+
+      maxv: maxi v @;
+      x maxv.data @ abs col maxv.data @ eps * abs > ~ [
+        FALSE
+      ] [
+        col maxi < [
+          1 swaps + !swaps
+          col v @ maxi v @ col v ! maxi v !
+        ] when
+
+        src: col v @;
+
+        fc col - 1 - [
+          y: i col + 1 +;
+          dst: y v @;
+
+          factor: x dst.data @ x src.data @ /;
+          ll: src.data fieldCount fc -;
+          ll [
+            ind: i fc +;
+            ind dst.data @ ind src.data @ factor * - ind dst.data !
+          ] times
+        ] times
+
+        col 1 + !col col fc <
+      ] if
+    ] loop
+    swaps
+  ] func;
+
+  makeIdByDiagonalList: [
+    v:;
+    fc: v fieldCount;
+    one: 1 0 0 v @ .data @ cast;
+    fc [
+      y: i;
+      src: y v @;
+      factor: y fc + src.data @ rcp;
+      one y fc + src.data !
+      shx: y fc + 1 +;
+      src.VECTOR shx - [x: i shx +; x src.data @ factor * x src.data !] times
+
+      y [
+        dst: i v @;
+        firstx: y fc +;
+        factor: firstx dst.data @;
+        dst.VECTOR firstx - [
+          x: i firstx +;
+          x dst.data @ x src.data @ factor * - x dst.data !
+        ] times
+      ] times
+    ] times
+  ] func;
+
+  makeMatrixByRightPartOfListV: [
+    srcs:v:;;
+    y: v fieldCount;
+    x: 0 v @ .VECTOR srcs -;
+    result: {x:x; y:y;} 0 0 v @ .data @ x y * array makeMatrixByFields;
+    dst: result.data;
+    y [
+      src: i v @ .data;
+      dsts: i y *;
+      x [i srcs + src @ i dsts + dst !] times
+    ] times
+    result
+  ] func;
+
+  makeMatrixByRightPartOfListH: [
+    v:;
+    y: v fieldCount;
+    srcs: y y +;
+    x: 0 v @ .VECTOR srcs -;
+    result: {x:x; y:y;} 0 0 v @ .data @ x y * array makeMatrixByFields;
+    dst: result.data;
+    y [
+      src: i v @ .data;
+      dsti: i;
+      x [
+        i srcs + src @ dsti dst !
+        dsti x + !dsti
+      ] times
+    ] times
+    result
+  ] func;
+
+  minv: [
+    m:;
+    idM: 0 m.data @ m.MATRIX IdMatrix;
+    results: () m.MATRIX.y array;
+    m.MATRIX.y [i m mgetvv dup v&v i idM mgetvv v&v i results !] times
+    badLine:swaps: m.MATRIX.x m.MATRIX.x results makeRectVectorList;;
+    badLine m.MATRIX.y < [
+      # zero
+      drop
+      badv: m.MATRIX.y 0 0 m.data @ cast m.MATRIX.y array makeVectorByFields;
+      1 0 m.data @ cast badLine badv.data !
+      () 0 0 m.data @ cast badv m.MATRIX.x dup + results makeMatrixByRightPartOfListV v*m FALSE
+    ] [
+      # ok
+      drop
+      detm: 1 0 m.data @ cast;
+      m.MATRIX.x [i m.MATRIX.y + i results @ .data @ detm * !detm] times
+      swaps 2 mod 0 = ~ [detm neg !detm] when
+      results makeIdByDiagonalList
+      resm: m.MATRIX.x dup + results makeMatrixByRightPartOfListV detm m*;
+      resm transposeInplace
+      resm detm () TRUE
+    ] if
+  ] func;
+
+  mhomSolve: [
+    m:;
+    idM: 0 m.data @ {x:m.MATRIX.x; y:m.MATRIX.x;} IdMatrix;
+    results: () m.MATRIX.x array;
+    m.MATRIX.x [i m mgetvv dup v&v i idM mgetvv v&v i results !] times
+    badLine:swaps: m.MATRIX.y m.MATRIX.y results makeRectVectorList;;
+    badLine m.MATRIX.x < [
+      # zero
+      drop
+      badv: m.MATRIX.x 0 0 m.data @ cast m.MATRIX.x array makeVectorByFields;
+      1 0 m.data @ cast badLine badv.data !
+      badv m.MATRIX.y dup + results makeMatrixByRightPartOfListV v*m TRUE
+    ] [
+      # nonZero
+      drop () FALSE
+    ] if
+  ] func;
+
+  mrank: [
+    m:;
+    results: () m.MATRIX.y array;
+    m.MATRIX.y [i m mgethv dup v&v i results !] times
+    badLine:swaps: m.MATRIX.x m.MATRIX.x results makeRectVectorList;;
+    drop
+    badLine
+  ] func;
+
+  misSolvable: [
+    m:v:;;
+    results: () m.MATRIX.x array;
+    eps: 1.0e-5 0 v.data @ cast;
+    m.MATRIX.x [i m mgetvv i v.data @ v&n dup v&v i results !] times
+    stringCount: m.MATRIX.y m.MATRIX.y 1 + results makeRectVectorList drop;
+    drop
+    i1: m.MATRIX.y;
+    i2: i1 i1 + 1 +;
+    ok: TRUE;
+    [stringCount results fieldCount < ok and] [
+      check: stringCount results @ .data;
+      i2 check @ abs i1 check @ eps * abs > [FALSE !ok] when
+      stringCount 1 + !stringCount
+    ] while
+    ok
+  ] func;
+
+  msolve: [
+    m:v:;;
+    idM: 0 m.data @ {x:m.MATRIX.x; y:m.MATRIX.x;} IdMatrix;
+    results: () m.MATRIX.x array;
+    eps: 1.0e-5 0 v.data @ cast;
+    m.MATRIX.x [i m mgetvv i v.data @ v&n dup v&v i idM mgetvv v&v i results !] times
+    stringCount:swaps: m.MATRIX.y m.MATRIX.y 1 + results makeRectVectorList;;
+    columns:;
+    i1: m.MATRIX.y;
+    i2: i1 i1 + 1 +;
+    badLine: -1;
+    i: stringCount;
+    [i results fieldCount < badLine 0 < and] [
+      check: i results @ .data;
+      i2 check @ abs i1 check @ eps * abs > [i !badLine] when
+      i 1 + !i
+    ] while
+
+    badLine 0 < [
+      trap: () stringCount array;
+      stringCount [stringCount dup + 1 + 0 0 m.data @ cast stringCount dup + 1 + array makeVectorByFields i trap !] times
+
+      mdet: 1 0 m.data @ cast;
+      stringCount [
+        src: i results @;
+        ri: i;
+        stringCount [i columns @ src @ i stringCount + ri trap @ .data !] times
+        m.MATRIX.y dup + 1 + src @ stringCount dup + ri trap @ .data !
+      ] times
+
+      trap makeIdByDiagonalList
+      result: m.MATRIX.y 0 0 m.data @ cast m.MATRIX.y array makeVectorByFields;
+      stringCount [stringCount dup + i trap @ .data @ i columns @ m.MATRIX.y 1 + - result !] times
+      result mdet () TRUE
+    ] [
+      badv: m.MATRIX.x 0 0 m.data @ cast m.MATRIX.x array makeVectorByFields;
+      1 0 m.data @ cast badLine badv.data !
+      () () badv m.MATRIX.y 1 + dup + results makeMatrixByRightPartOfListV v*m FALSE
+    ] if
+  ] func;
+
+  mrm: [m1:m2:;; m1.MATRIX.x m2.MATRIX.y = m1.MATRIX.x m1.MATRIX.y = and 0 m1.data @ 0 m2.data @ same and] [
+    m1:m2:;;
+    results: () m1.MATRIX.y array;
+
+    m1.MATRIX.y [i m1 mgethv dup v&v i m2 mgethv v&v i results !] times
+    results makeDiagonalVectorList drop
+    results makeIdByDiagonalList
+    m1.MATRIX.x dup + results makeMatrixByRightPartOfListV
+  ] pfunc;
+
+  mmr: [m1:m2:;; m1.MATRIX.x m2.MATRIX.y = m2.MATRIX.x m2.MATRIX.y = and 0 m1.data @ 0 m2.data @ same and] [
+    m1:m2:;;
+    results: () m2.MATRIX.x array;
+    m2.MATRIX.x [i m2 mgetvv dup v&v i m1 mgetvv v&v i results !] times
+    results makeDiagonalVectorList drop
+    results makeIdByDiagonalList
+    results makeMatrixByRightPartOfListH
+  ] pfunc;
+
+  mrcp: [.MATRIX dup .x swap .y =] [m:; 0 m.data @ m.MATRIX IdMatrix m mrcpmul] pfunc;
+
+  makeRectVectorList: [
+    xsize:xshift:v:;;;
+    # initialMatrix Vector
+    swaps: 0;
+    xc: xshift;
+    fc: v fieldCount;
+    eps: 1.0e-5 0 0 v @ .data @ cast;
+    cy: 0;
+    zero: 0.0 0 0 v @ .data @ cast;
+    colNumbers: -1 fc array;
+    i: 0;
+
+
+    [i xsize < cy fc < and] [
+      col: i xc +;
+      maxf: zero;
+      maxi: cy;
+      fc cy - [
+        y: i cy +;
+        cur: col y v @ .data @ abs;
+        cur maxf > [cur !maxf y !maxi] when
+      ] times
+
+      maxv: maxi v @;
+
+      col maxv.data @ abs i maxv.data @ eps * abs > ~ [
+        zero col maxv.data !
+      ] [
+        col cy colNumbers !
+        cy maxi < [
+          1 swaps + !swaps
+          cy v @ maxi v @ cy v ! maxi v !
+        ] when
+
+        src: cy v @;
+
+        fc cy - 1 - [
+          y: i cy + 1 +;
+          dst: y v @;
+
+          factor: col dst.data @ col src.data @ /;
+          ll: src.data fieldCount xc -;
+          ll [
+            ind: i xc +;
+            ind dst.data @ ind src.data @ factor * - ind dst.data !
+          ] times
+        ] times
+
+        cy 1 + !cy
+      ] if
+
+      i 1 + !i
+    ] while
+
+    colNumbers cy swaps
+  ] func;
+
+  m*: [m:n:;; m 0 fieldName "MATRIX" = 0 m.data @ n same and] [
+    m:n:;; m.MATRIX m.data [n *] map makeMatrixByFields
+  ] pfunc;
+
+  m*v: [m:v:;; m.MATRIX.x v.VECTOR = 0 m.data @ 0 v.data @ same and] [
+    m:v:;;
+    result: m.MATRIX.y 0 0 v.data @ cast m.MATRIX.y array makeVectorByFields;
+    m.MATRIX.y [
+      ri: i;
+      y1: i m.MATRIX.x *;
+      m.MATRIX.x [
+        y1 i + m.data @ i v.data @ * ri result.data @ + ri result.data !
+      ] times
+    ] times
+    result
+  ] pfunc;
+
+  v*m: [v:m:;; m.MATRIX.y v.VECTOR = 0 m.data @ 0 v.data @ same and] [
+    v:m:;;
+    result: m.MATRIX.x 0 0 v.data @ cast m.MATRIX.x array makeVectorByFields;
+    m.MATRIX.y [
+      ri: i;
+      x1: i m.MATRIX.x *;
+      m.MATRIX.x [
+        ri v.data @
+        x1 i + m.data @ *
+        i result.data @ +
+        i result.data !] times
+    ] times
+    result
+  ] pfunc;
+
+  mgethv: [0 fieldName "MATRIX" =] [.row] pfunc;
+  mgetvv: [0 fieldName "MATRIX" =] [.column] pfunc;
+
+  transposeInplace: [.MATRIX dup .x swap .y =] [
+    m:;
+    se: [i1:i2:;; i1 m.data @ i2 m.data @ i1 m.data ! i2 m.data !] func;
+    m.MATRIX.x 5 < [
+      m.MATRIX.x 1 = [
+      ] [
+        m.MATRIX.x 2 = [1 2 se] [
+          m.MATRIX.x 3 = [1 3 se 2 6 se 5 7 se] [
+            1 4 se 2 8 se 3 12 se 6 9 se 7 13 se 11 14 se
+          ] if
+        ] if
+      ] if
+    ] [
+      sz: m.MATRIX.x;
+      max: sz sz *;
+      sz 1 - [
+        i1: i 1 +;
+        di1: sz;
+        i2: i1 sz *;
+        [
+          i1 i2 se
+          i1 di1 + !i1
+          i2 1 + !i2
+          i1 i2 <
+        ] loop
+      ] times
+    ] if
+  ] pfunc;
+
+  mdet: [
+    m:;
+    m.MATRIX.x 4 < [
+      m.MATRIX.x 1 = [
+        0 m.data @
+      ] [
+        m.MATRIX.x 2 = [
+          0 m.data @ 3 m.data @ * 1 m.data @ 2 m.data @ * -
+        ] [
+          0 m.data @ 4 m.data @ * 1 m.data @ 3 m.data @ * - 8 m.data @ *
+          1 m.data @ 5 m.data @ * 2 m.data @ 4 m.data @ * - 6 m.data @ * +
+          2 m.data @ 3 m.data @ * 0 m.data @ 5 m.data @ * - 7 m.data @ * +
+        ] if
+      ] if
+    ] [
+      vl: () m.MATRIX.x array;
+      m.MATRIX.x [i m mgethv dup v&v i vl !] times
+      swaps: vl makeDiagonalVectorList;
+      result: 1 0 m.data @ cast;
+      m.MATRIX.x [i m.MATRIX.x + i vl @ .data @ result * !result] times
+      swaps 2 mod 0 = [result] [result neg] if
+    ] if
+  ] func;
+
+  msignOfDeterminant: [
+    m:;
+
+    zero: 0 0 m.data @ cast;
+    sign: [x:; x zero < [-1] [x zero > [1] [0] if] if] func;
+
+    m.MATRIX.x 4 < [
+      m.MATRIX.x 1 = [
+        0 m.data @ sign
+      ] [
+        m.MATRIX.x 2 = [
+          0 m.data @ 3 m.data @ * 1 m.data @ 2 m.data @ * - sign
+        ] [
+          0 m.data @ 4 m.data @ * 1 m.data @ 3 m.data @ * - 8 m.data @ *
+          1 m.data @ 5 m.data @ * 2 m.data @ 4 m.data @ * - 6 m.data @ * +
+          2 m.data @ 3 m.data @ * 0 m.data @ 5 m.data @ * - 7 m.data @ * + sign
+        ] if
+      ] if
+    ] [
+      vl: () m.MATRIX.x array;
+      m.MATRIX.x [i m mgethv dup v&v i vl !] times
+      swaps: vl makeDiagonalVectorList;
+      result: 0 m.data @ sign;
+
+      m.MATRIX.x [i i vl @ .data @ sign result * !result] times
+      swaps 2 mod 0 = [result] [result neg] if
+    ] if
+  ] func;
+
+  m=: [m1:m2:;; m1.MATRIX.x m2.MATRIX.x = m1.MATRIX.y m2.MATRIX.y = and 0 m1.data @ 0 m2.data @ same and] [
+    m1:m2:;;
+    result: TRUE;
+    eps: 1.0e-5 0 m1.data @ cast;
+    i: 0;
+    [
+      e1: i m1.data @;
+      e2: i m2.data @;
+      e1 e2 - abs eps e1 * abs > [
+        FALSE !result
+        FALSE
+      ] [
+        i 1 + !i i m1.data fieldCount <
+      ] if
+    ] loop
+    result
+  ] pfunc;
+
+  vtovm: [.VECTOR TRUE] [
+    v:;
+    {x:1; y:v.VECTOR;} v.data copy makeMatrixByFields
+  ] pfunc;
+
+  vtohm: [.VECTOR TRUE] [
+    v:;
+    {x:v.VECTOR; y:1;} v.data copy makeMatrixByFields
+  ] pfunc;
+
+  mhConcat: [m1:m2:;; m1.MATRIX.y m2.MATRIX.y = 0 m1.data @ 0 m2.data @ same and] [
+    m1:m2:;;
+    result: {x:m1.MATRIX.x m2.MATRIX.x +; y:m1.MATRIX.y;} 0 m1.data @ makeMatrixByFields;
+
+    m1.MATRIX.y [
+      i1: i m1.MATRIX.x *;
+      i2: i m2.MATRIX.x *;
+      ir: i1 i2 +;
+      m1.MATRIX.x [
+        i1 i + m1.data @ ir i + result.data !
+      ] times
+
+      ir m1.MATRIX.x + !ir
+      m2.MATRIX.x [
+        i2 i + m2.data @ ir i + result.data !
+      ] times
+    ] times
+    result
+  ] pfunc;
+
+  mvConcat: [m1:m2:;; m1.MATRIX.x m2.MATRIX.x = 0 m1.data @ 0 m2.data @ same and] [
+    m1:m2:;;
+    size: {x:m1.MATRIX.x; y:m1.MATRIX.y m2.MATRIX.y +;};
+    result: size 0 m1.data @ size.x size.y * array makeMatrixByFields;
+
+    m1s: m1.data fieldCount;
+    m1s [i m1.data @ i result.data !] times
+    m2.data fieldCount [i m2.data @ i m1s + result.data !] times
+    result
+  ] pfunc;
+
+  mmax: [0 fieldName "MATRIX" =] [.data enmax] pfunc;
+};
+
+makeVector: [
+  en:;
+  l: ();
+  en [v:; l v , drop] each
+  l AlgebraInternal.makeVectorByList
+] func;
+
+copy: [0 fieldName "VECTOR" =] [src:; src.VECTOR src.data copy makeVectorByFields] pfunc;
+
+dot: [v1:v2:;; v1.VECTOR v2.VECTOR = 0 v1.data @ 0 v2.data @ same and] [
+  v1:v2:;;
+  result: 0 0 v1.data @ cast;
+  v1.VECTOR [i v1.data @ i v2.data @ * result + !result] times
+  result
+] pfunc;
+
+cross: [v1:v2:;; v1.VECTOR 3 = v2.VECTOR 3 = and 0 v1.data @ 0 v2.data @ same and] [
+  v1:v2:;;
+  ( 1 v1.data @ 2 v2.data @ * 2 v1.data @ 1 v2.data @ * -
+    2 v1.data @ 0 v2.data @ * 0 v1.data @ 2 v2.data @ * -
+    0 v1.data @ 1 v2.data @ * 1 v1.data @ 0 v2.data @ * -
+  ) AlgebraInternal.makeVectorByList
+] pfunc;
+
+neg: [0 fieldName "VECTOR" =] [
+  v:;
+  v.VECTOR v.data [neg] map AlgebraInternal.makeVectorByFields
+] pfunc;
+
+perp: [.VECTOR 2 =] [
+  v:; ( 1 v.data @ 0 v.data @ neg) AlgebraInternal.makeVectorByList
+] pfunc;
+
+@: [0 fieldName "VECTOR" =] [.data @] pfunc;
+!: [0 fieldName "VECTOR" =] [.data !] pfunc;
++: [0 fieldName "VECTOR" =] [AlgebraInternal.v+v] pfunc;
+-: [0 fieldName "VECTOR" =] [AlgebraInternal.v-v] pfunc;
+*: [drop 0 fieldName "VECTOR" =] [AlgebraInternal.v*] pfunc;
+/: [drop 0 fieldName "VECTOR" =] [rcp AlgebraInternal.v*] pfunc;
+=: [0 fieldName "VECTOR" =] [AlgebraInternal.v=] pfunc;
+
+
+copy: [0 fieldName "MATRIX" =] [src:; src.MATRIX copy src.data copy AlgebraInternal.makeMatrixByFields] pfunc;
+neg: [0 fieldName "MATRIX" =] [result: copy; result.data fieldCount [i result.data @ neg i result.data !] times result] pfunc;
+
+makeMatrix: [
+  components:;
+  x: 0;
+  y: 0;
+  data: ();
+  components [
+    cc:;
+    cx: 0;
+    cc [el:; data el , drop cx 1 + !cx] each
+    y 0 = [cx !x] [cx x = ~ ["components have different size!" error] when] if
+    y 1 + !y
+  ] each
+  {x:x; y:y;} data AlgebraInternal.makeMatrixByFields
+] func;
+
+makeDiagonalMatrix: [
+  en:;
+  l: ();
+  [v:; l v , drop] en each
+  size: {x: l fieldCount; y: l fieldCount;};
+  data: 0 0 l @ cast size.x size.y array;
+  i: 0;
+  j: 0;
+  [j l fieldCount <] [
+    j l @ i data !
+    j 1 + !j
+    i size.x 1 + + !i
+  ] while
+  size data makeMatrixByFields
+] func;
+
+det: [.MATRIX dup .x swap .y =] [AlgebraInternal.mdet] pfunc;
+
+signOfDeterminant: [.MATRIX dup .x swap .y =] [AlgebraInternal.msignOfDeterminant] pfunc;
+inv: [.MATRIX dup .x swap .y =] [AlgebraInternal.minv] pfunc;
+homSolve: [.MATRIX TRUE] [AlgebraInternal.mhomSolve] pfunc;
+rank: [.MATRIX TRUE] [AlgebraInternal.mrank] pfunc;
+isSolvable: [m:v:;; v.VECTOR m.MATRIX.x =] [AlgebraInternal.misSolvable] pfunc;
+solve: [m:v:;; v.VECTOR m.MATRIX.x =] [AlgebraInternal.msolve] pfunc;
+
+=: [0 fieldName "MATRIX" =] [AlgebraInternal.m=] pfunc;
+
+transpose: [0 fieldName "MATRIX" =] [
+  m:;
+  result: {x:m.MATRIX.y; y:m.MATRIX.x;} m.data copy AlgebraInternal.makeMatrixByFields;
+
+  sz: m.MATRIX.x m.MATRIX.y *;
+  m.MATRIX.y [
+    i1: i m.MATRIX.x *;
+    i2: i;
+    di2: m.MATRIX.y;
+    [
+      i1 m.data @ i2 result.data !
+      i1 1 + !i1
+      i2 di2 + !i2
+      i2 sz <
+    ] loop
+  ] times
+
+  result
+] pfunc;
+
+@: [0 fieldName "MATRIX" =] [x:y:m:;;; x y m.MATRIX.x * + m.data @] pfunc;
+!: [0 fieldName "MATRIX" =] [x:y:m:;;; x y m.MATRIX.x * + m.data !] pfunc;
++: [0 fieldName "MATRIX" =] [AlgebraInternal.m+m] pfunc;
+-: [0 fieldName "MATRIX" =] [AlgebraInternal.m-m] pfunc;
+*: [drop 0 fieldName "MATRIX" =] [AlgebraInternal.m*] pfunc;
+/: [drop 0 fieldName "MATRIX" =] [rcp AlgebraInternal.m*] pfunc;
+*: [0 fieldName "MATRIX" = swap 0 fieldName "MATRIX" = and] [AlgebraInternal.m*m] pfunc;
+*: [0 fieldName "MATRIX" = swap 0 fieldName "VECTOR" = and] [AlgebraInternal.v*m] pfunc;

@@ -1,0 +1,334 @@
+"control" useFile
+"linkedList" useFile
+"array" useFile
+
+hash: ["hash is missing for that type" printStack 0 call] func;
+hash: [0n8 same] [0n32 cast 0 cast] pfunc;
+hash: [0n16 same] [0n32 cast 0 cast] pfunc;
+hash: [0n32 same] [0n32 cast 0 cast] pfunc;
+hash: [0n64 same] [0n32 cast 0 cast] pfunc;
+hash: [0i8 same] [0 cast] pfunc;
+hash: [0i16 same] [0 cast] pfunc;
+hash: [0i32 same] [0 cast] pfunc;
+hash: [0i64 same] [0 cast] pfunc;
+
+hash: [textSplit TRUE] [
+  charHash: [c:; 0n8 c textMemoryPointer readMemory 0 cast] func;
+  arr: textSplit;
+  result: 33;
+  arr fieldCount [result 47 * i arr @ charHash + !result] times
+  result
+] pfunc;
+
+sameAndEquals: [drop drop FALSE] func;
+sameAndEquals: [=] [drop drop TRUE] pfunc;
+
+HashTableInternal: {
+  makeIterator: [{
+    ITERATOR: {};
+    HASH_TABLE_ITERATOR: {};
+
+    node:;
+
+    get: [{key: node.value.@key; value: node.value.@value;}] func;
+    set: [node.value.!value] func;
+
+    next: [
+      node.next HashTableInternal.makeIterator
+    ] func;
+
+    prev: [
+      node.prev HashTableInternal.makeIterator
+    ] func;
+  }] func;
+
+  makeRange: [{
+    RANGE: {};
+    HASH_TABLE_RANGE: {};
+
+    firstIter:afterLastIter:;;
+    lastIter: [afterLastIter.node.prev HashTableInternal.makeIterator] func;
+    endIter: [afterLastIter] func;
+    first: [firstIter.get] func;
+    last: [afterLastIter.prev.get] func;
+    empty: [firstIter () same] func;
+    single: [empty [FALSE] [firstIter afterLastIter.prev =] if] func;
+    unheadIter: [empty ~] [firstIter firstIter.next afterLastIter HashTableInternal.makeRange] pfunc;
+    unheadIter: [single] [firstIter () () HashTableInternal.makeRange] pfunc;
+    untailIter: [empty ~] [firstIter afterLastIter.prev HashTableInternal.makeRange afterLastIter.prev] pfunc;
+    untailIter: [single] [() () HashTableInternal.makeRange afterLastIter.prev] pfunc;
+    unhead: [empty ~] [firstIter.get firstIter.next afterLastIter HashTableInternal.makeRange] pfunc;
+    unhead: [single] [firstIter.get () () HashTableInternal.makeRange] pfunc;
+    untail: [empty ~] [firstIter afterLastIter.prev HashTableInternal.makeRange afterLastIter.prev.get] pfunc;
+    untail: [single] [() () HashTableInternal.makeRange afterLastIter.prev.get] pfunc;
+    makeRange: [firstIter afterLastIter HashTableInternal.makeRange] func;
+    makeRange: [empty] [() () HashTableInternal.makeRange] pfunc;
+  }] func;
+
+  htEnumIter: [enumIterObject:enumIterRangeBody:;; enumIterObject.unheadIter swap @enumIterRangeBody call [@enumIterRangeBody htEnumIter] [drop] if] func;
+  htEnumIter: [drop .single] [enumIterRangeBody:; .firstIter @enumIterRangeBody call drop] pfunc;
+  htEnumIter: [drop .empty] [drop drop] pfunc;
+  htEnum: [enumRangeBody:; [.get @enumRangeBody call] htEnumIter] func;
+
+  getCurrentBucketPair: [
+    bucketIndex:;
+    bucketIndex 2 *     buckets.at
+    bucketIndex 2 * 1 + buckets.at
+  ] func;
+
+  addNodeToBucket: [
+    newNode:bucketIndex:;;
+
+    currentBucketFirst:
+    currentBucketLast: bucketIndex getCurrentBucketPair;;
+
+    currentBucketFirst.node () same [
+      newNode bucketList.pushBack
+      bucketList.lastIter      bucketIndex 2 *     buckets.set
+      bucketList.lastIter dup  bucketIndex 2 * 1 + buckets.set
+    ] [
+      newNode currentBucketLast.insertAfter
+      currentBucketLast.next dup bucketIndex 2 * 1 + buckets.set
+    ] if
+  ] func;
+
+  htFind: ["Invalid key! Cannot be compared with itself!" error] func;
+
+  htFind: [dup =] [
+    key:;
+    keyHash: @key hash;
+    bucketIndex: keyHash buckets.getSize 1 rshift 1 - and;
+    listIter: ();
+    result: FALSE;
+
+    currentBucketFirst: currentBucketLast:
+    bucketIndex HashTableInternal.getCurrentBucketPair;;
+
+    currentBucketFirst.node () same ~ [
+      [
+        currentBucketFirst.get.@key @key sameAndEquals [
+          TRUE !result
+          currentBucketFirst !listIter
+          FALSE
+        ] [
+          currentBucketFirst currentBucketLast = [
+            FALSE
+          ] [
+            TRUE
+            currentBucketFirst.next !currentBucketFirst
+          ] if
+        ] if
+      ] loop
+    ] when
+
+    keyHash
+    bucketIndex
+    listIter
+    result
+  ] pfunc;
+
+  htInsert: [
+    keyHash: bucketIndex: listIter: key: value:;;;;;
+    newIterator: {@key key:; keyHash keyHash:; @value value:;} bucketIndex HashTableInternal.addNodeToBucket;
+    itemCount 1 + !itemCount
+    itemCount 2 * buckets.getSize > [
+      buckets.getSize dup 512 < [8] [2] if * rebuild
+    ] when
+    newIterator
+  ] func;
+};
+
+HashTable: [{
+  CONTAINER: {};
+  HASH_TABLE: {};
+  INDEX_OVERLOAD: {};
+
+  itemCount: 0;
+  bucketList: List;
+  buckets: () ListInternal.makeIterator 16 makeArray; # in MSVC implementation there is closed range
+
+  empty: [itemCount 0 =] func;
+  single: [itemCount 1 =] func;
+
+  rebuild: [
+    newBucketCount:;
+    oldBucketList: bucketList;
+
+    () ListInternal.makeIterator newBucketCount makeArray !buckets
+    List !bucketList
+    oldBucketList [
+      node:;
+      keyHash: node.keyHash;
+      bucketIndex: keyHash buckets.getSize 1 rshift 1 - and;
+      node bucketIndex HashTableInternal.addNodeToBucket drop
+      TRUE
+    ] enum
+  ] func;
+
+  firstIter: [
+    bucketList.firstIter.node HashTableInternal.makeIterator
+  ] func;
+
+  lastIter: [
+    bucketList.lastIter.node HashTableInternal.makeIterator
+  ] func;
+
+  endIter: [
+    bucketList.endIter.node HashTableInternal.makeIterator
+  ] func;
+
+  makeRange: [firstIter endIter HashTableInternal.makeRange] func;
+  makeRange: [empty] [() () HashTableInternal.makeRange] pfunc;
+
+  insert: [
+    key:value:;;
+    @key HashTableInternal.htFind [
+      listIter:; drop drop
+      @value listIter.get.!value
+    ] [
+      @key @value HashTableInternal.htInsert drop
+    ] if
+  ] func;
+
+  find: [
+    HashTableInternal.htFind [
+      listIter:; drop drop
+      listIter.get.@value
+      TRUE
+    ] [
+      drop drop drop
+      () FALSE
+    ] if
+  ] func;
+
+  findOrInsert: [
+    key:;
+    @key HashTableInternal.htFind [
+      listIter:; drop drop
+      listIter.node HashTableInternal.makeIterator TRUE
+    ] [
+      @key () HashTableInternal.htInsert.node HashTableInternal.makeIterator FALSE
+    ] if
+  ] func;
+
+  findIter: [
+    HashTableInternal.htFind [
+      listIter:; drop drop
+      listIter.node HashTableInternal.makeIterator
+      TRUE
+    ] [
+      keyHash: bucketIndex: listIter:;;;
+      bucketList.endIter.node HashTableInternal.makeIterator
+      FALSE
+    ] if
+  ] func;
+
+  eraseListIter: [
+    bucketIndex:listIter:;;
+
+    currentBucketFirst:
+    currentBucketLast: bucketIndex HashTableInternal.getCurrentBucketPair;;
+
+    currentBucketFirst currentBucketLast = [
+      () ListInternal.makeIterator bucketIndex 2 *     buckets.set
+      () ListInternal.makeIterator bucketIndex 2 * 1 + buckets.set
+    ] [
+      currentBucketFirst listIter = [
+        currentBucketFirst.next bucketIndex 2 *     buckets.set
+      ] [
+        currentBucketLast listIter = [
+          currentBucketLast.prev bucketIndex 2 * 1 + buckets.set
+        ] when
+      ] if
+    ] if
+
+    listIter bucketList.eraseIter
+    itemCount 1 - !itemCount
+
+    itemCount 0 = [
+      #bucketList is empty!!!!!
+      () ListInternal.makeIterator 16 makeArray !buckets
+    ] when
+  ] func;
+
+  erase: [
+    HashTableInternal.htFind [
+      eraseListIter drop
+    ] [
+      drop drop drop
+    ] if
+  ] func;
+
+  eraseIter: [dup 1 fieldName "HASH_TABLE_ITERATOR" = swap endIter = ~ and] [
+    iter:;
+    bucketIndex: iter.node.value.keyHash buckets.getSize 1 rshift 1 - and;
+    bucketIndex iter.node ListInternal.makeIterator eraseListIter
+  ] pfunc;
+
+  getSize: [itemCount] func;
+
+  clear: [
+    bucketList.clear
+    buckets.clear
+    () ListInternal.makeIterator 16 makeArray !buckets
+    0 !itemCount
+  ] func;
+}] func;
+
+=: [1 fieldName "HASH_TABLE_ITERATOR" =] [
+  .node swap .node is
+] pfunc;
+
+copy: [1 fieldName "HASH_TABLE" =] [
+  src:;
+  dst: HashTable;
+  src.itemCount dst.!itemCount
+  src.bucketList copy dst.!bucketList
+  src.buckets.getSize dst.rebuild
+  dst
+] pfunc;
+
+makeHashTableByRange: [
+  r:t: .untail;;
+  result: r makeHashTableByRange;
+  0 t @ 1 t @ result.insert
+  result
+] func;
+
+makeHashTableByRange: [.empty] [
+  drop
+  HashTable
+] pfunc;
+
+makeHashTable: [0 fieldName "RANGE" =] [
+  makeHashTableByRange
+] pfunc;
+
+makeHashTable: [isPureList] [
+  list:;
+  result: HashTable;
+  i: 0;
+  [i list fieldCount <] [
+    item: i list @;
+    0 item @ 1 item @ result.insert
+    i 1 + !i
+  ] while
+  result
+] pfunc;
+
+enumIter: [drop 1 fieldName "HASH_TABLE_RANGE" =] [HashTableInternal.htEnumIter] pfunc;
+enum:     [drop 1 fieldName "HASH_TABLE_RANGE" =] [HashTableInternal.htEnum]     pfunc;
+enumIter: [drop 1 fieldName "HASH_TABLE" =] [enumBody:; .makeRange @enumBody HashTableInternal.htEnumIter] pfunc;
+enum:     [drop 1 fieldName "HASH_TABLE" =] [enumBody:; .makeRange @enumBody HashTableInternal.htEnum]     pfunc;
+
+@:          [1 fieldName "HASH_TABLE_ITERATOR" =] [0.NOT_ALLOWED_FOR_HASH_TABLE_ITERATOR] pfunc;
+!:          [1 fieldName "HASH_TABLE_ITERATOR" =] [0.NOT_ALLOWED_FOR_HASH_TABLE_ITERATOR] pfunc;
+fieldCount: [1 fieldName "HASH_TABLE_ITERATOR" =] [0.NOT_ALLOWED_FOR_HASH_TABLE_ITERATOR] pfunc;
+
+@:          [1 fieldName "HASH_TABLE_RANGE" =] [0.NOT_ALLOWED_FOR_HASH_TABLE_RANGE] pfunc;
+!:          [1 fieldName "HASH_TABLE_RANGE" =] [0.NOT_ALLOWED_FOR_HASH_TABLE_RANGE] pfunc;
+fieldCount: [1 fieldName "HASH_TABLE_RANGE" =] [0.NOT_ALLOWED_FOR_HASH_TABLE_RANGE] pfunc;
+
+@:          [1 fieldName "HASH_TABLE" =] [.find ~ [drop 0.INVALID_KEY] when] pfunc;
+!:          [1 fieldName "HASH_TABLE" =] [.findIter ~ [drop drop 0.INVALID_KEY] [.set] if] pfunc;
+fieldCount: [1 fieldName "HASH_TABLE" =] [.getSize] pfunc;

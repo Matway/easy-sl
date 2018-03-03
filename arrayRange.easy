@@ -1,0 +1,299 @@
+"control" useFile
+
+ArrayInternal: {
+  makeIterator: [{
+    ITERATOR: {};
+    ARRAY_ITERATOR: {};
+
+    data:
+    index:
+    ;;
+
+    get: [index data @] func;
+    set: [index data !] func;
+    next: [data index 1 + ArrayInternal.makeIterator] func;
+    prev: [data index 1 - ArrayInternal.makeIterator] func;
+  }] func;
+
+
+  makeRange: [
+    data:firstIndex:afterLastIndex:;;;
+    data () same [
+      TRUE
+    ] [
+      firstIndex 0 < ~
+      afterLastIndex data fieldCount > ~ and
+      firstIndex afterLastIndex < and
+    ] if
+  ] [{
+    RANGE: {};
+    ARRAY_RANGE: {};
+
+    data:firstIndex:afterLastIndex:;;;
+
+    empty: [data () same] func;
+    single: [empty ~ firstIndex afterLastIndex 1 - = and] func;
+    getSize: [data () same [0] [afterLastIndex firstIndex -] if] func;
+
+    first: [firstIndex data @] func;
+    last: [afterLastIndex 1 - data @] func;
+    firstIter: [data firstIndex ArrayInternal.makeIterator] func;
+    lastIter: [data afterLastIndex 1 - ArrayInternal.makeIterator] func;
+    endIter: [data afterLastIndex ArrayInternal.makeIterator] func;
+
+    at: [
+      index:;
+      data () same [
+        FALSE
+      ] [
+        index 0 < ~
+        index afterLastIndex firstIndex - < and
+      ] if
+    ] [
+      firstIndex + data @
+    ] pfunc;
+
+    set: [
+      index:;
+      data () same [
+        FALSE
+      ] [
+        index 0 < ~
+        index afterLastIndex firstIndex - < and
+      ] if
+    ] [
+      firstIndex + data !
+    ] pfunc;
+
+    unheadIter: [empty ~] [
+      data firstIndex ArrayInternal.makeIterator
+      data firstIndex 1 + afterLastIndex ArrayInternal.makeRange
+    ] pfunc;
+
+    unheadIter: [single] [
+      data firstIndex ArrayInternal.makeIterator
+      () 0 0 ArrayInternal.makeRange
+    ] pfunc;
+
+    unhead: [empty ~] [
+      firstIndex data @
+      data firstIndex 1 + afterLastIndex ArrayInternal.makeRange
+    ] pfunc;
+
+    unhead: [single] [
+      firstIndex data @
+      () 0 0 ArrayInternal.makeRange
+    ] pfunc;
+
+    untailIter: [empty ~] [
+      data firstIndex afterLastIndex 1 - ArrayInternal.makeRange
+      data afterLastIndex 1 - ArrayInternal.makeIterator
+    ] pfunc;
+
+    untailIter: [single] [
+      () 0 0 ArrayInternal.makeRange
+      data afterLastIndex 1 - ArrayInternal.makeIterator
+    ] pfunc;
+
+    untail: [empty ~] [
+      data firstIndex afterLastIndex 1 - ArrayInternal.makeRange
+      last
+    ] pfunc;
+
+    untail: [single] [
+      () 0 0 ArrayInternal.makeRange
+      last
+    ] pfunc;
+
+    makeRange: [
+      data firstIndex afterLastIndex ArrayInternal.makeRange
+    ] func;
+
+    subRange: [
+      newFirstIndex:newAfterLastIndex:;;
+      data () same [
+        [newFirstIndex 0 =] assert
+        [newAfterLastIndex 0 =] assert
+        () 0 0 ArrayInternal.makeRange
+      ] [
+      [newFirstIndex 0 < ~] assert
+      [newAfterLastIndex afterLastIndex firstIndex - > ~] assert
+      [newFirstIndex newAfterLastIndex > ~] assert
+        newFirstIndex newAfterLastIndex = [
+          () 0 0 ArrayInternal.makeRange
+        ] [
+          data newFirstIndex firstIndex + newAfterLastIndex firstIndex + ArrayInternal.makeRange
+        ] if
+      ] if
+    ] func;
+
+    heapSort: [
+      parent:[1 - 2 /] func;
+      left:[2 * 1 +] func;
+      right:[2 * 2 +] func;
+      isRoot:[0 =] func;
+      isLeft:[1 and 1 =] func;
+      isRight:[1 and 0 =] func;
+      iSwap:[i:j:;; tmp:i at; j at i set tmp j set] func;
+
+      i: 1;
+      [i getSize <] [
+        j:i;
+        [j isRoot ~] [
+          p: j parent;
+          j at p at > [j p iSwap] when
+          p !j
+        ] while
+        i 1 + !i
+      ] while
+
+      i: getSize 1 -;
+      [i 0 < ~] [
+        j:0;
+        j i iSwap
+        [
+          l: j left;
+          r: j right;
+
+          l i < [
+            r i < [l at r at >] [TRUE] if [
+              l at j at > [j l iSwap l !j TRUE] [FALSE] if
+            ] [
+              r at j at > [j r iSwap r !j TRUE] [FALSE] if
+            ] if
+          ] [
+            FALSE
+          ] if
+        ] loop
+        i 1 - !i
+      ] while
+
+      makeRange # return itself
+    ] func;
+
+    heapSort: [single] [makeRange] pfunc;
+    heapSort: [empty] [makeRange] pfunc;
+    sort: [heapSort] func;
+  }] pfunc;
+
+  arrayEnum: [
+    eachArrayObject:eachArrayBody:;;
+    i: eachArrayObject.firstIndex;
+    [
+      i eachArrayObject.data @ @eachArrayBody call [
+        i 1 + !i
+        i eachArrayObject.afterLastIndex <
+      ] [
+        FALSE
+      ] if
+    ] loop
+  ] func;
+
+  arrayEnum: [drop .single] [
+    eachArrayObject:eachArrayBody:;;
+    eachArrayObject.firstIndex eachArrayObject.data @ @eachArrayBody call drop
+  ] pfunc;
+
+  arrayEnum: [drop .empty] [
+    drop drop
+  ] pfunc;
+
+  arrayEnumIter: [
+    eachArrayObject:eachArrayBody:;;
+    i: eachArrayObject.firstIndex;
+    [
+      eachArrayObject.data i ArrayInternal.makeIterator @eachArrayBody call [
+        i 1 + !i
+        i eachArrayObject.afterLastIndex <
+      ] [
+        FALSE
+      ] if
+    ] loop
+  ] func;
+
+  arrayEnumIter: [drop .single] [
+    eachArrayObject:eachArrayBody:;;
+    eachArrayObject.data eachArrayObject.firstIndex ArrayInternal.makeIterator @eachArrayBody call drop
+  ] pfunc;
+
+  arrayEnumIter: [drop .empty] [
+    drop drop
+  ] pfunc;
+};
+
+enumIter: [drop 1 fieldName "ARRAY_RANGE" =] [ArrayInternal.arrayEnumIter] pfunc;
+enum:     [drop 1 fieldName "ARRAY_RANGE" =] [ArrayInternal.arrayEnum]     pfunc;
+
+@:          [1 fieldName "ARRAY_RANGE" =] [.at] pfunc;
+!:          [1 fieldName "ARRAY_RANGE" =] [.set] pfunc;
+fieldCount: [1 fieldName "ARRAY_RANGE" =] [.getSize] pfunc;
+
+@:          [1 fieldName "ARRAY_ITERATOR" =] [0.NOT_ALLOWED_FOR_ARRAY_ITERATOR] pfunc;
+!:          [1 fieldName "ARRAY_ITERATOR" =] [0.NOT_ALLOWED_FOR_ARRAY_ITERATOR] pfunc;
+fieldCount: [1 fieldName "ARRAY_ITERATOR" =] [0.NOT_ALLOWED_FOR_ARRAY_ITERATOR] pfunc;
+
+=: [
+  it1:it2:;;
+  it1 1 fieldName "ARRAY_ITERATOR" =
+  it2 1 fieldName "ARRAY_ITERATOR" = and
+  it1.data it2.data is and
+] [
+  .index swap .index =
+] pfunc;
+
+<: [
+  it1:it2:;;
+  it1 1 fieldName "ARRAY_ITERATOR" =
+  it2 1 fieldName "ARRAY_ITERATOR" = and
+  it1.data it2.data is and
+] [
+  .index swap .index >
+] pfunc;
+
+>: [
+  it1:it2:;;
+  it1 1 fieldName "ARRAY_ITERATOR" =
+  it2 1 fieldName "ARRAY_ITERATOR" = and
+  it1.data it2.data is and
+] [
+  .index swap .index <
+] pfunc;
+
++: [
+  drop 1 fieldName "ARRAY_ITERATOR" =
+] [
+  it:n:;;
+  it.data it.index n + ArrayInternal.makeIterator
+] pfunc;
+
+-: [
+  drop 1 fieldName "ARRAY_ITERATOR" =
+] [
+  it:n:;;
+  it.data it.index n - ArrayInternal.makeIterator
+] pfunc;
+
+-: [
+  it1:it2:;;
+  it1 1 fieldName "ARRAY_ITERATOR" =
+  it2 1 fieldName "ARRAY_ITERATOR" = and
+  it1.data it2.data is and
+] [
+  it1:it2:;;
+  it1.index it2.index -
+] pfunc;
+
+rangeByBuiltinList: [
+  combined:;
+  combined 0 combined fieldCount ArrayInternal.makeRange
+] func;
+
+rangeByIterators: [
+  it1:it2:;;
+  it1 1 fieldName "ARRAY_ITERATOR" =
+  it2 1 fieldName "ARRAY_ITERATOR" = and
+  it1.data it2.data is and
+] [
+  it1:it2:;;
+  it1.data it1.index it2.index ArrayInternal.makeRange
+] pfunc;

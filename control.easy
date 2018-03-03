@@ -1,0 +1,61 @@
+func: {
+  CALL: [
+    {
+      CALL:;
+    }
+  ];
+};
+
+pfunc: [
+  {
+    CALL:;
+    PRE:;
+  }
+] func;
+
+drop: [a:;] func;
+nip: [b:; a:; @b] func;
+swap: [b:; a:; @b @a] func;
+dup: [a:; @a @a] func;
+over: [b:; a:; @a @b @a] func;
+
+when: [
+  [] if
+] func;
+
+bind: [
+  {
+    bindBody:;
+    bindValue:;
+    CALL: [bindValue bindBody call];
+  }
+] func;
+
+while: [
+  whileBody:; whileCond:;
+  @whileCond call [
+    [
+      @whileBody call @whileCond call
+    ] loop
+  ] when
+] func;
+
+times: [
+  timesBody:;
+  timesCount:;
+  i: 0;
+  [
+    i timesCount <
+  ] [
+    @timesBody call
+    i 1 + !i
+  ] while
+] func;
+
+||: [[TRUE] swap if] func;
+&&: [[FALSE] if] func;
+assert: [call ~ ["Assertion failed!" error] when] func;
+
+isPureList: [drop FALSE] func;
+isPureList: [fieldCount TRUE] [drop TRUE] pfunc;
+isPureList: [2 fieldName "INDEX_OVERLOAD" =] [drop FALSE] pfunc;

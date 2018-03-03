@@ -1,0 +1,990 @@
+"control" useFile
+
+RedBlackTreeInternal: {
+  makeNode: [
+    nilNode:;
+  {
+    key:
+    value:
+    red:
+    parent:
+    ;;;;
+    nil: FALSE;
+    left: nilNode;
+    right: nilNode;
+  }] func;
+
+  nodeIsRoot: [
+    .parent.nil
+  ] func;
+
+  makeHead: [
+    result: () () FALSE () () makeNode;
+    TRUE result.!nil
+    result result.!left
+    result result.!right
+    result result.!parent
+    result
+  ] func;
+
+  makeIterator: [{
+    ITERATOR: {};
+    RED_BLACK_TREE_ITERATOR: {};
+
+    node:;
+    get: [{key: node.@key; value: node.@value;}] func;
+    set: [node.!value] func;
+
+    next: [node.nil ~] [
+      newNode: node;
+      newNode.right.nil [
+        [
+          newNode.parent.right newNode is newNode.parent.nil ~ and
+          newNode.parent !newNode
+        ] loop
+      ] [
+        newNode.right !newNode
+        [newNode.left.nil ~]
+        [newNode.left !newNode] while
+      ] if
+      newNode RedBlackTreeInternal.makeIterator
+    ] pfunc;
+
+    prev: [
+      node.nil [
+        node.right RedBlackTreeInternal.makeIterator
+      ] [
+        newNode: node;
+        newNode.left.nil [
+          [
+            newNode RedBlackTreeInternal.nodeIsRoot [
+              FALSE
+              () !newNode
+            ] [
+              newNode.parent.left newNode is
+              newNode.parent !newNode
+            ] if
+          ] loop
+        ] [
+          newNode.left !newNode
+          [newNode.right.nil ~]
+          [newNode.right !newNode] while
+        ] if
+        newNode RedBlackTreeInternal.makeIterator
+      ] if
+    ] func;
+  }] func;
+
+  makeRange: [{
+    RANGE: {};
+    RED_BLACK_TREE_RANGE: {};
+
+    firstIter: afterLastIter:;;
+    empty: [firstIter afterLastIter =] func;
+    first: [firstIter.get] func;
+    endIter: [afterLastIter] func;
+
+    lbound: [
+      key:;
+      newNode: firstIter.node;
+      [
+        newNode RedBlackTreeInternal.nodeIsRoot [
+          FALSE
+        ] [
+          newNode.parent.left newNode is
+          @key newNode.parent.@key < ~ and
+          newNode.right.nil or
+        ] if [
+          [
+            newNode newNode.parent.right is
+            newNode.parent !newNode
+          ] loop
+        ] [
+          newNode.right !newNode
+          [@key newNode.@key < newNode.left.nil ~ and]
+          [newNode.left !newNode] while
+        ] if
+        @key newNode.@key >
+      ] loop
+      newNode RedBlackTreeInternal.makeIterator afterLastIter RedBlackTreeInternal.makeRange
+    ] func;
+
+    lbound: [firstIter.node.@key > ~] [
+      drop
+      firstIter afterLastIter RedBlackTreeInternal.makeRange
+    ] pfunc;
+
+    lbound: [afterLastIter.prev.node.@key >] [
+      drop
+      afterLastIter afterLastIter RedBlackTreeInternal.makeRange
+    ] pfunc;
+
+    lbound: [empty] [
+      drop
+      afterLastIter afterLastIter RedBlackTreeInternal.makeRange
+    ] pfunc;
+
+    rbound: [
+      key:;
+      newNode: afterLastIter.prev.node;
+
+      [
+        newNode RedBlackTreeInternal.nodeIsRoot [
+          FALSE
+        ] [
+          newNode.parent.right newNode is
+          @key newNode.parent.@key > ~ and
+          newNode.left.nil or
+        ] if [
+          [
+            newNode newNode.parent.left is
+            newNode.parent !newNode
+          ] loop
+        ] [
+          newNode.left !newNode
+          [@key newNode.@key > newNode.right.nil ~ and]
+          [newNode.right !newNode] while
+        ] if
+        @key newNode.@key > ~
+      ] loop
+      firstIter newNode RedBlackTreeInternal.makeIterator.next RedBlackTreeInternal.makeRange
+    ] func;
+
+    rbound: [afterLastIter.prev.node.@key >] [
+      drop
+      firstIter afterLastIter RedBlackTreeInternal.makeRange
+    ] pfunc;
+
+    rbound: [firstIter.node.@key > ~] [
+      drop
+      firstIter firstIter RedBlackTreeInternal.makeRange
+    ] pfunc;
+
+    rbound: [empty] [
+      drop
+      firstIter firstIter RedBlackTreeInternal.makeRange
+    ] pfunc;
+
+    bound: [rbound.lbound] func;
+
+    unheadIter: [empty ~] [firstIter firstIter.next afterLastIter RedBlackTreeInternal.makeRange] pfunc;
+    untailIter: [empty ~] [firstIter afterLastIter.prev RedBlackTreeInternal.makeRange afterLastIter.prev] pfunc;
+    unhead: [empty ~] [firstIter.get firstIter.next afterLastIter RedBlackTreeInternal.makeRange] pfunc;
+    untail: [empty ~] [firstIter afterLastIter.prev RedBlackTreeInternal.makeRange afterLastIter.prev.get] pfunc;
+    makeRange: [firstIter afterLastIter RedBlackTreeInternal.makeRange] func;
+  }] func;
+
+  rbEnumIter: [enumIterObject:enumIterRangeBody:;; enumIterObject.unheadIter swap @enumIterRangeBody call [@enumIterRangeBody rbEnumIter] [drop] if] func;
+  rbEnumIter: [drop .empty] [drop drop] pfunc;
+  rbEnum: [enumRangeBody:; [.get @enumRangeBody call] rbEnumIter] func;
+
+  rbFind: [
+    key:;
+    result: { parent: getRoot; nextLeft: (); found: FALSE; };
+    empty ~ [
+      [
+        @key result.parent.@key = [
+          TRUE result.!found
+          FALSE
+        ] [
+          @key result.parent.@key < result.!nextLeft
+          next: result.nextLeft [result.parent.left] [result.parent.right] if;
+          next.nil [
+            FALSE
+          ] [
+            next result.!parent
+            TRUE
+          ] if
+        ] if
+      ] loop
+    ] when
+    result
+  ] func;
+
+  rbInsert: [
+    key:;
+    empty [
+      @key () FALSE head head RedBlackTreeInternal.makeNode setRoot
+      getRoot head.!right
+      getRoot head.!left
+      getRoot FALSE
+    ] [
+      findResult: @key RedBlackTreeInternal.rbFind;
+      findResult.found [
+        findResult.parent TRUE
+      ] [
+        parent: findResult.parent;
+        newNode: @key () TRUE parent head RedBlackTreeInternal.makeNode;
+        result: newNode;
+        newNode parent findResult.nextLeft [
+          .!left
+          parent head.left is [newNode head.!left] when
+        ] [
+          .!right
+          parent head.right is [newNode head.!right] when
+        ] if
+
+        [
+          parent.red [
+            grand: parent.parent;
+            uncle: parent getBrother;
+            uncle isRed [
+              # red uncle
+              FALSE parent.!red
+              FALSE uncle.!red
+              grand RedBlackTreeInternal.nodeIsRoot [
+                FALSE
+              ] [
+                TRUE grand.!red
+                grand.parent !parent
+                grand !newNode
+                TRUE # continue
+              ] if
+            ] [
+              # black or nil uncle
+              newNode parent.right is parent grand.left is = [
+                # different directions
+                grand parent isLeftChild [rightRotateBig] [leftRotateBig] if
+                FALSE newNode.!red
+                TRUE grand.!red
+                FALSE
+              ] [
+                # same directions
+                grand parent isLeftChild [rightRotateSmall] [leftRotateSmall] if
+                FALSE parent.!red
+                TRUE grand.!red
+                FALSE
+              ] if
+            ] if
+          ] [
+            FALSE
+          ] if
+        ] loop
+        result FALSE
+      ] if
+    ] if
+  ] func;
+};
+
+RedBlackTree: [{
+  CONTAINER: {};
+  RED_BLACK_TREE: {};
+  INDEX_OVERLOAD: {};
+
+  head: RedBlackTreeInternal.makeHead;
+  getRoot: [head.parent] func;
+  setRoot: [head.!parent] func;
+
+  empty: [getRoot.nil] func;
+  single: [getRoot.nil [FALSE] [getRoot.left.nil getRoot.right.nil and] if] func;
+
+  isLeftChild: [dup.parent.left is] [drop TRUE] pfunc;
+  isLeftChild: [dup.parent.right is] [drop FALSE] pfunc;
+
+  changeChild: [
+    old:new:;;
+    old getRoot is [
+      old RedBlackTreeInternal.nodeIsRoot [
+        new setRoot
+      ] [
+      ] if
+    ] [
+      new old.parent old isLeftChild [.!left] [.!right] if
+    ] if
+  ] func;
+
+  getBrother: [
+    node:;
+    node.parent node isLeftChild [.right] [.left] if
+  ] func;
+
+  leftRotateSmall: [
+    node:;
+    child: node.right;
+    child.left node.!right
+    node child.!left
+    node child changeChild
+    node.right.nil ~ [node node.right.!parent] when
+    node.parent child.!parent
+    child node.!parent
+  ] func;
+
+  rightRotateSmall: [
+    node:;
+    child: node.left;
+    child.right node.!left
+    node child.!right
+    node child changeChild
+    node.left.nil ~ [node node.left.!parent] when
+    node.parent child.!parent
+    child node.!parent
+  ] func;
+
+  leftRotateBig: [
+    node:;
+    child: node.right;
+    childChild: child.left;
+    childChild.left node.!right
+    childChild.right child.!left
+    child childChild.!right
+    node childChild.!left
+    node childChild changeChild
+
+    node.right.nil ~ [node node.right.!parent] when
+    child.left.nil ~ [child child.left.!parent] when
+    node.parent childChild.!parent
+    childChild child.!parent
+    childChild node.!parent
+  ] func;
+
+  rightRotateBig: [
+    node:;
+    child: node.left;
+    childChild: child.right;
+    childChild.right node.!left
+    childChild.left child.!right
+    child childChild.!left
+    node childChild.!right
+    node childChild changeChild
+
+    node.left.nil ~ [node node.left.!parent] when
+    child.right.nil ~ [child child.right.!parent] when
+    node.parent childChild.!parent
+    childChild child.!parent
+    childChild node.!parent
+  ] func;
+
+  swapAllLinks: [.parent is ~] [
+    nodeLow:nodeHigh:;;
+    nodeLow.parent nodeHigh is [
+      nodeHigh.left nodeLow is [
+        nodeHigh nodeLow changeChild
+        nodeHigh.right.nil ~ [nodeLow nodeHigh.right.!parent] when
+        nodeLow.left.nil ~ [nodeHigh nodeLow.left.!parent] when
+        nodeLow.right.nil ~ [nodeHigh nodeLow.right.!parent] when
+
+        nodeHigh.parent nodeLow.!parent
+        nodeLow nodeHigh.!parent
+
+        tmp: nodeLow.right;
+        nodeHigh.right nodeLow.!right
+        tmp nodeHigh.!right
+
+        nodeLow.left nodeHigh.!left
+        nodeHigh nodeLow.!left
+      ] [
+        nodeHigh.right nodeLow is [
+          nodeHigh nodeLow changeChild
+          nodeHigh.left.nil ~ [nodeLow nodeHigh.left.!parent] when
+          nodeLow.left.nil ~ [nodeHigh nodeLow.left.!parent] when
+          nodeLow.right.nil ~ [nodeHigh nodeLow.right.!parent] when
+
+          nodeHigh.parent nodeLow.!parent
+          nodeLow nodeHigh.!parent
+
+          tmp: nodeLow.left;
+          nodeHigh.left nodeLow.!left
+          tmp nodeHigh.!left
+
+          nodeLow.right nodeHigh.!right
+          nodeHigh nodeLow.!right
+        ] when
+      ] if
+    ] [
+      nodeLow nodeHigh changeChild
+      nodeHigh nodeLow changeChild
+      nodeHigh.left.nil ~ [nodeLow nodeHigh.left.!parent] when
+      nodeHigh.right.nil ~ [nodeLow nodeHigh.right.!parent] when
+      nodeLow.left.nil ~ [nodeHigh nodeLow.left.!parent] when
+      nodeLow.right.nil ~ [nodeHigh nodeLow.right.!parent] when
+
+      tmp: nodeLow.parent;
+      nodeHigh.parent nodeLow.!parent
+      tmp nodeHigh.!parent
+
+      tmp: nodeLow.left;
+      nodeHigh.left nodeLow.!left
+      tmp nodeHigh.!left
+
+      tmp: nodeLow.right;
+      nodeHigh.right nodeLow.!right
+      tmp nodeHigh.!right
+    ] if
+
+    tmp: nodeHigh.red;
+    nodeLow.red nodeHigh.!red
+    tmp nodeLow.!red
+
+  ] pfunc;
+
+  isRed: [.red] func;
+
+  findOrInsert: [
+    node:founded: RedBlackTreeInternal.rbInsert;;
+    node RedBlackTreeInternal.makeIterator founded
+  ] func;
+
+  insert: [swap RedBlackTreeInternal.rbInsert drop .!value] func;
+
+  delLeaf: [
+    node:child:;;
+    parent: node.parent;
+    brother: head;
+
+    parent.nil ~ [
+      node getBrother !brother
+      node child changeChild
+    ] when
+    child.nil ~ [node.parent child.!parent] when
+
+    head node.!right
+    head node.!left
+    head node.!parent
+
+    node.red ~ [
+      child isRed [
+        FALSE child.!red
+      ] [
+        [
+          break: [
+            FALSE
+          ] func;
+
+          continueWithNewChild: [
+            child.parent !parent
+            parent.nil [
+              head
+            ] [
+              child getBrother
+            ] if
+            !brother
+            TRUE
+          ] func;
+
+          continueWithOldChild: [
+            TRUE
+          ] func;
+
+          handleBlackBrotherWithRedChild: [
+            #parent red or black
+            parent.left brother is [
+              brother.left isRed [
+                parent rightRotateSmall
+                parent.red brother.!red
+                FALSE brother.left.!red
+                FALSE parent.!red
+                break
+              ] [
+                brother leftRotateSmall
+                TRUE brother.!red
+                FALSE parent.left.!red
+                parent.left !brother
+                continueWithOldChild
+              ] if
+            ] [
+              parent.right brother is [
+                brother.right isRed [
+                  parent leftRotateSmall
+                  parent.red brother.!red
+                  FALSE brother.right.!red
+                  FALSE parent.!red
+                  break
+                ] [
+                  brother rightRotateSmall
+                  TRUE brother.!red
+                  FALSE parent.right.!red
+                  parent.right !brother
+                  continueWithOldChild
+                ] if
+              ] [
+              ] if
+            ] if
+          ] func;
+
+          handleRedParent: [
+            brother.left isRed ~ brother.right isRed ~ and [
+              TRUE brother.!red
+              FALSE parent.!red
+              break
+            ] [
+              handleBlackBrotherWithRedChild
+            ] if
+          ] func;
+
+          handleBlackParentRedBrother: [
+            brother isLeftChild [
+              parent rightRotateSmall
+              FALSE brother.!red
+              TRUE parent.!red
+              parent.left !brother
+              continueWithOldChild
+            ] [
+              parent leftRotateSmall
+              FALSE brother.!red
+              TRUE parent.!red
+              parent.right !brother
+              continueWithOldChild
+            ] if
+          ] func;
+
+          handleBlackParentBlackBrother: [
+            brother.left isRed ~ brother.right isRed ~ and [
+              TRUE brother.!red
+              parent !child
+              continueWithNewChild
+            ] [
+              handleBlackBrotherWithRedChild
+            ] if
+          ] func;
+
+          handleBlackParent: [
+            brother.red [
+              handleBlackParentRedBrother
+            ] [
+              handleBlackParentBlackBrother
+            ] if
+          ] func;
+
+          parent.nil ~ [
+            parent.red [
+              handleRedParent
+            ] [
+              handleBlackParent
+            ] if
+          ] [
+            FALSE
+          ] if
+        ] loop
+      ] if
+    ] when
+  ] func;
+
+  eraseNode: [
+    node:;
+
+    wasLeft: node head.left is;
+    wasRight: node head.left is;
+
+    node.right.nil ~ [
+      forSwap: node.right;
+      [
+        next: forSwap.left;
+        next.nil [
+          FALSE
+        ] [
+          next !forSwap
+          TRUE
+        ] if
+      ] loop
+      forSwap node swapAllLinks
+    ] [
+      node.left.nil ~ [
+        forSwap: node.left;
+        [
+          next: forSwap.right;
+          next.nil [
+            FALSE
+          ] [
+            next !forSwap
+            TRUE
+          ] if
+        ] loop
+        forSwap node swapAllLinks
+      ] when
+    ] if
+
+    node.left.nil [
+      node node.right delLeaf
+    ] [
+      node.right.nil [
+        node node.left delLeaf
+      ] when
+    ] if
+
+    () node.!left
+    () node.!right
+    () node.!parent
+
+    wasRight [findLastIter.node head.!right] when
+    wasLeft [findFirstIter.node head.!left] when
+  ] func;
+
+  eraseIter: [dup 1 fieldName "RED_BLACK_TREE_ITERATOR" = swap .node.nil ~ and] [
+    iter:;
+    iter.node eraseNode
+    () iter.!node
+  ] pfunc;
+
+  erase: [
+    key:;
+    findResult: @key RedBlackTreeInternal.rbFind;
+    findResult.found [
+      findResult.parent eraseNode
+    ] when
+  ] func;
+
+  findIter: [
+    key:;
+    findResult: @key RedBlackTreeInternal.rbFind;
+    findResult.found [
+      findResult.parent RedBlackTreeInternal.makeIterator
+      TRUE
+    ] [
+      head RedBlackTreeInternal.makeIterator
+      FALSE
+    ] if
+  ] func;
+
+  find: [
+    key:;
+    findResult: @key RedBlackTreeInternal.rbFind;
+    findResult.found [
+      findResult.parent.@value
+      TRUE
+    ] [
+      ()
+      FALSE
+    ] if
+
+  ] func;
+
+  debugPrintNode: [
+    depth:node:;;
+    LF print
+    depth ["  " print] times
+    node.@key print
+    "," print
+    node.@value print
+    "," print
+    node.red ["R"] ["b"] if print
+  ] func;
+
+  debugPrint: [
+    current: getRoot;
+    depth: 0;
+    LF print
+    "tree: (" print
+    [current.nil ~] [
+      current.left.nil ~ [
+        "(" print
+        current.left !current
+        depth 1 + !depth
+      ] [
+        depth current debugPrintNode
+        current.right.nil ~ [
+          "(" print
+          current.right !current
+          depth 1 + !depth
+        ] [
+          [
+            parent: current.parent;
+            parent.nil [
+              parent !current
+              depth 1 - !depth
+              FALSE
+            ] [
+              current isLeftChild [
+                ") " print
+                depth 1 - parent debugPrintNode
+                parent.right.nil [
+                  parent !current
+                  depth 1 - !depth
+                  TRUE
+                ] [
+                  "( " print
+                  parent.right !current
+                  FALSE
+                ] if
+              ] [
+                ") " print
+                parent !current
+                depth 1 - !depth
+                TRUE
+              ] if
+            ] if
+          ] loop
+        ] if
+      ] if
+    ] while
+    ")" print
+  ] func;
+
+  validate: [
+    current: getRoot;
+
+    check: [
+      text:condition:;;
+      @condition call ~ [
+        text print
+        0 call
+      ] when
+    ] func;
+
+    "root has parent!" [getRoot.nil ~] check
+
+
+    [current.nil ~] [
+      bcount: -1;
+      currentBcount: 0;
+
+      left: current.left;
+      right: current.right;
+      "right parent isnt this!" [right.nil [TRUE] [right.parent current is] if] check
+      "left parent isnt this!" [left.nil [TRUE] [left.parent current is] if] check
+      "right and this are red!" [current isRed right isRed and ~] check
+      "left and this are red!" [current isRed left isRed and ~] check
+      left.nil ~ [
+        left.red ~ [currentBcount 1 + !currentBcount] when
+        left !current
+      ] [
+        right.nil ~ [
+          right.red ~ [currentBcount 1 + !currentBcount] when
+          right !current
+        ] [
+          bcount 0 < [
+            currentBcount !bcount
+          ] [
+            "black count mismatch" [currentBcount bcount =] check
+          ] if
+
+          [
+            parent: current.parent;
+            parent.nil [
+              current.red ~ [currentBcount 1 - !currentBcount] when
+              parent !current
+              FALSE
+            ] [
+              current isLeftChild [
+                parent.right.nil [
+                  current.red ~ [currentBcount 1 - !currentBcount] when
+                  parent !current
+                  TRUE
+                ] [
+                  current.red ~ [currentBcount 1 - !currentBcount] when
+                  parent.right.red ~ [currentBcount 1 + !currentBcount] when
+                  parent.right !current
+                  FALSE
+                ] if
+              ] [
+                current.red ~ [currentBcount 1 - !currentBcount] when
+                parent !current
+                TRUE
+              ] if
+            ] if
+          ] loop
+        ] if
+      ] if
+    ] while
+    TRUE
+  ] func;
+
+  clear: [
+    clearNode: [
+      node:;
+      head node.!parent
+      head node.!left
+      head node.!right
+    ] func;
+
+    current: getRoot;
+    [current.nil ~] [
+      left: current.left;
+      right: current.right;
+      left.nil ~ [
+        left !current
+      ] [
+        right.nil ~ [
+          right !current
+        ] [
+          [
+            parent: current.parent;
+            parent.nil [
+              current clearNode
+              parent !current
+              FALSE
+            ] [
+              current isLeftChild [
+                parent.right.nil [
+                  head parent.!left
+                  current clearNode
+                  parent !current
+                  TRUE
+                ] [
+                  parent.right !current
+                  FALSE
+                ] if
+              ] [
+                head parent.!right
+                head parent.!left
+                current clearNode
+                parent !current
+                TRUE
+              ] if
+            ] if
+          ] loop
+        ] if
+      ] if
+    ] while
+    head setRoot
+    head head.!left
+    head head.!right
+  ] func;
+
+  findFirstIter: [
+    empty [
+      getRoot RedBlackTreeInternal.makeIterator
+    ] [
+      current: getRoot;
+      [current.left.nil ~]
+      [current.left !current] while
+      current RedBlackTreeInternal.makeIterator
+    ] if
+  ] func;
+
+  findLastIter: [
+    getRoot.nil [
+      getRoot RedBlackTreeInternal.makeIterator
+    ] [
+      current: getRoot;
+      [current.right.nil ~]
+      [current.right !current] while
+      current RedBlackTreeInternal.makeIterator
+    ] if
+  ] func;
+
+  firstIter: [head.left RedBlackTreeInternal.makeIterator] func;
+  lastIter: [head.right RedBlackTreeInternal.makeIterator] func;
+  endIter: [head RedBlackTreeInternal.makeIterator] func;
+
+  first: [firstIter.get] func;
+  last: [lastIter.get] func;
+
+  lbound: [makeRange.lbound] func;
+  rbound: [makeRange.rbound] func;
+  bound:  [makeRange.bound] func;
+
+  makeRange: [firstIter endIter RedBlackTreeInternal.makeRange] func;
+
+  DIE: [
+    clear
+    () head.!parent
+    () head.!left
+    () head.!right
+  ];
+}] func;
+
+enumIter: [drop 1 fieldName "RED_BLACK_TREE_RANGE" =] [RedBlackTreeInternal.rbEnumIter] pfunc;
+enum:     [drop 1 fieldName "RED_BLACK_TREE_RANGE" =] [RedBlackTreeInternal.rbEnum    ] pfunc;
+enumIter: [drop 1 fieldName "RED_BLACK_TREE" =] [enumBody:; .makeRange @enumBody RedBlackTreeInternal.rbEnumIter] pfunc;
+enum:     [drop 1 fieldName "RED_BLACK_TREE" =] [enumBody:; .makeRange @enumBody RedBlackTreeInternal.rbEnum    ] pfunc;
+
+copy: [1 fieldName "RED_BLACK_TREE" =] [
+  source:;
+  result: RedBlackTree;
+
+  source.empty ~ [
+    current: source.getRoot;
+
+    copyNode: [
+      parent:node:;;
+      node.@key copy node.@value copy node.red parent result.head RedBlackTreeInternal.makeNode
+    ] func;
+
+    result.head source.getRoot copyNode result.setRoot
+
+    dest: result.getRoot;
+
+    [current.nil ~] [
+      left: current.left;
+      right: current.right;
+
+      left.nil ~ [
+        dest left copyNode dest.!left
+        left !current
+        dest.left !dest
+      ] [
+        right.nil ~ [
+          dest right copyNode dest.!right
+          right !current
+          dest.right !dest
+        ] [
+          [
+            parent: current.parent;
+            parent.nil [
+              parent !current
+              dest.parent !dest
+              FALSE
+            ] [
+              current source.isLeftChild [
+                parent.right.nil [
+                  parent !current
+                  dest.parent !dest
+                  TRUE
+                ] [
+                  parent.right !current
+                  dest.parent parent.right copyNode dest.parent.!right
+                  dest.parent.right !dest
+                  FALSE
+                ] if
+              ] [
+                parent !current
+                dest.parent !dest
+                TRUE
+              ] if
+            ] if
+          ] loop
+        ] if
+      ] if
+    ] while
+  ] when
+
+  result.findFirstIter.node result.head.!left
+  result.findLastIter.node result.head.!right
+
+  result
+] pfunc;
+
+=: [1 fieldName "RED_BLACK_TREE_ITERATOR" =] [
+  .node swap .node is
+] pfunc;
+
+
+makeRedBlackTreeByRange: [
+  r:t: .untail;;
+  result: r makeRedBlackTreeByRange;
+  0 t @ 1 t @ result.insert
+  result
+] func;
+
+makeRedBlackTreeByRange: [.empty] [
+  drop
+  RedBlackTree
+] pfunc;
+
+makeRedBlackTree: [0 fieldName "RANGE" =] [
+  makeRedBlackTreeByRange
+] pfunc;
+
+makeRedBlackTree: [isPureList] [
+  list:;
+  result: RedBlackTree;
+  i: 0;
+  [i list fieldCount <] [
+    item: i list @;
+    0 item @ 1 item @ result.insert
+    i 1 + !i
+  ] while
+  result
+] pfunc;
+
+@:          [1 fieldName "RED_BLACK_TREE_ITERATOR" =] [0.NOT_ALLOWED_FOR_RED_BLACK_TREE_ITERATOR] pfunc;
+!:          [1 fieldName "RED_BLACK_TREE_ITERATOR" =] [0.NOT_ALLOWED_FOR_RED_BLACK_TREE_ITERATOR] pfunc;
+fieldCount: [1 fieldName "RED_BLACK_TREE_ITERATOR" =] [0.NOT_ALLOWED_FOR_RED_BLACK_TREE_ITERATOR] pfunc;
+
+@:          [1 fieldName "RED_BLACK_TREE_RANGE" =] [0.NOT_ALLOWED_FOR_RED_BLACK_TREE_RANGE] pfunc;
+!:          [1 fieldName "RED_BLACK_TREE_RANGE" =] [0.NOT_ALLOWED_FOR_RED_BLACK_TREE_RANGE] pfunc;
+fieldCount: [1 fieldName "RED_BLACK_TREE_RANGE" =] [0.NOT_ALLOWED_FOR_RED_BLACK_TREE_RANGE] pfunc;
+
+@:          [1 fieldName "RED_BLACK_TREE" =] [.find ~ [drop 0.INVALID_KEY] when] pfunc;
+!:          [1 fieldName "RED_BLACK_TREE" =] [.findIter ~ [drop drop 0.INVALID_KEY] [.set] if] pfunc;
+fieldCount: [1 fieldName "RED_BLACK_TREE" =] [0.NOT_ALLOWED_FOR_RED_BLACK_TREE] pfunc;

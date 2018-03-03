@@ -1,0 +1,243 @@
+"control" useFile
+
+ListInternal: {
+  INTERNAL: {};
+
+  makeNode: [{
+    LIST_NODE: {};
+    value:;
+    prev:();
+    next:();
+  }] func;
+
+  makeRootNode: [
+    result: () makeNode;
+    result result.!prev
+    result result.!next
+    result
+  ] func;
+
+  insertBetween: [
+    node1:node2:newNode:;;;
+    node1 newNode.!prev
+    node2 newNode.!next
+    newNode node2.!prev
+    newNode node1.!next
+  ] func;
+
+  eraseNode: [
+    node:;
+    node.next node.prev.!next
+    node.prev node.next.!prev
+    () node.!next
+    () node.!prev
+  ] func;
+
+  insertBefore: [
+    newNode: node:;;
+    node.prev node newNode insertBetween
+  ] func;
+
+  insertAfter: [
+    newNode: node:;;
+    node node.next newNode insertBetween
+  ] func;
+
+  makeIterator: [{
+    ITERATOR: {};
+    LIST_ITERATOR: {};
+
+    node:;
+    get: [node.@value] func;
+    set: [node.!value] func;
+    next: [node.next ListInternal.makeIterator] func;
+    prev: [node.prev ListInternal.makeIterator] func;
+    erase: [node ListInternal.eraseNode () !node] func;
+    insertBefore: [ListInternal.makeNode node ListInternal.insertBefore] func;
+    insertAfter: [ListInternal.makeNode node ListInternal.insertAfter] func;
+  }] func;
+
+  makeRange: [{
+    RANGE: {};
+    LIST_RANGE: {};
+
+    firstIter:afterLastIter:;;
+    first: [firstIter.get] func;
+    last: [afterLastIter.prev.get] func;
+    lastIter: [afterLastIter.prev] func;
+    endIter: [afterLastIter] func;
+    empty: [firstIter () same] func;
+    single: [empty [FALSE] [firstIter.node.next afterLastIter.node is] if] func;
+    unheadIter: [empty ~] [firstIter firstIter.next afterLastIter ListInternal.makeRange] pfunc;
+    unheadIter: [single] [firstIter () () ListInternal.makeRange] pfunc;
+    untailIter: [empty ~] [firstIter afterLastIter.prev ListInternal.makeRange afterLastIter.prev  ] pfunc;
+    untailIter: [single] [() () ListInternal.makeRange afterLastIter.prev] pfunc;
+    unhead: [empty ~] [firstIter.get firstIter.next afterLastIter ListInternal.makeRange] pfunc;
+    unhead: [single] [firstIter.get () () ListInternal.makeRange] pfunc;
+    untail: [empty ~] [firstIter afterLastIter.prev ListInternal.makeRange afterLastIter.prev.get] pfunc;
+    untail: [single] [() () ListInternal.makeRange afterLastIter.prev.get] pfunc;
+    makeRange: [firstIter afterLastIter ListInternal.makeRange] func;
+
+    merge: [
+      range1:range2:;;
+      beforeFirst: range1.firstIter.prev;
+      firstRangeLast: range1.afterLastIter.prev; # opened range quirk
+      afterLast: range2.afterLastIter;
+
+      [
+        range1.empty range2.empty or [
+          FALSE
+        ] [
+          headIter1:range1': range1.unheadIter;;
+          headIter1.get range2.first < [
+            range1.firstIter firstRangeLast =  [
+              () () ListInternal.makeRange !range1 # opened range quirk
+            ] [
+              range1' !range1
+            ] if
+          ] [
+            headIter2:range2': range2.unheadIter;;
+            headIter2.node ListInternal.eraseNode
+            headIter2.node headIter1.node ListInternal.insertBefore
+            range2' !range2
+          ] if
+          TRUE
+        ] if
+      ] loop
+      beforeFirst.next afterLast ListInternal.makeRange
+    ] func;
+
+    sort: [
+      subLast:firstIter;
+      subFirst:afterLastIter.prev;
+
+      condition: [subLast subFirst =] func;
+      condition ~ [
+        [
+          subLast.next !subLast
+          condition [FALSE] [subFirst.prev !subFirst condition ~] if
+        ] loop
+      ] when
+
+      result1: firstIter subLast ListInternal.makeRange.sort;
+      result1Last: result1.afterLastIter.prev;
+      result2: subFirst afterLastIter ListInternal.makeRange.sort; # here we corrupted result1.afterLast
+
+      newRange:
+      result1.firstIter result1Last.next ListInternal.makeRange
+      result2
+      merge;
+
+      newRange.firstIter !firstIter
+      newRange.afterLastIter !afterLastIter
+      newRange
+    ] func;
+
+    sort: [single] [firstIter afterLastIter ListInternal.makeRange] pfunc;
+    sort: [empty] [() () ListInternal.makeRange] pfunc;
+  }] func;
+
+  listEnumIter: [enumIterObject:enumIterRangeBody:;; enumIterObject.unheadIter swap @enumIterRangeBody call [@enumIterRangeBody listEnumIter] [drop] if] func;
+  listEnumIter: [drop .single] [enumIterRangeBody:; .firstIter @enumIterRangeBody call drop] pfunc;
+  listEnumIter: [drop .empty] [drop drop] pfunc;
+  listEnum: [enumRangeBody:; [.get @enumRangeBody call] listEnumIter] func;
+};
+
+List: [{
+  CONTAINER: {};
+  LIST: {};
+
+  root: ListInternal.makeRootNode;
+  empty: [root root.next is] func;
+  single: [empty [FALSE] [root.next root.prev is] if] func;
+  pushFront: [ListInternal.makeNode root ListInternal.insertAfter] func;
+  pushBack: [ListInternal.makeNode root ListInternal.insertBefore] func;
+  popFront: [empty ~] [root.next ListInternal.eraseNode] pfunc;
+  popBack: [empty ~] [root.prev ListInternal.eraseNode] pfunc;
+  firstIter: [root.next ListInternal.makeIterator] func;
+  lastIter: [root.prev ListInternal.makeIterator] func;
+  first: [root.next.@value] func;
+  last: [root.prev.@value] func;
+  endIter: [root ListInternal.makeIterator] func;
+  makeRange: [firstIter endIter ListInternal.makeRange] func;
+  makeRange: [empty] [() () ListInternal.makeRange] pfunc;
+  clear: [root.next ListInternal.eraseNode clear] func;
+  clear: [empty] [] pfunc;
+
+  eraseIter: [dup 1 fieldName "LIST_ITERATOR" = swap endIter = ~ and] [
+    .erase
+  ] pfunc;
+
+  DIE: [
+    clear
+    () root.!prev
+    () root.!next
+  ];
+}] func;
+
+enumIter: [drop 1 fieldName "LIST_RANGE" =] [ListInternal.listEnumIter] pfunc;
+enum:     [drop 1 fieldName "LIST_RANGE" =] [ListInternal.listEnum]     pfunc;
+enumIter: [drop 1 fieldName "LIST" =] [enumBody:; .makeRange @enumBody ListInternal.listEnumIter] pfunc;
+enum:     [drop 1 fieldName "LIST" =] [enumBody:; .makeRange @enumBody ListInternal.listEnum    ] pfunc;
+
+=: [1 fieldName "LIST_ITERATOR" =] [
+  .node swap .node is
+] pfunc;
+
+copy: [1 fieldName "LIST" =] [
+  src:;
+  dst: List;
+  src [copy dst.pushBack TRUE] enum
+  dst
+
+] pfunc;
+
+makeList: [
+  value:count:;;
+  result: List;
+  [count 0 >] [
+    @value copy result.pushBack
+    count 1 - !count
+  ] while
+
+  result
+] func;
+
+makeListByRange: [
+  .untail swap # t r'
+  result: makeListByRange; # t a
+  result.pushBack
+  result
+] func;
+
+makeListByRange: [.empty] [
+  drop
+  List
+] pfunc;
+
+makeList: [0 fieldName "RANGE" =] [
+  makeListByRange
+] pfunc;
+
+makeList: [isPureList] [
+  list:;
+  result: List;
+  i: 0;
+  [i list fieldCount <] [
+    i list @ result.pushBack
+    i 1 + !i
+  ] while
+  result
+] pfunc;
+
+@:          [1 fieldName "LIST_ITERATOR" =] [0.NOT_ALLOWED_FOR_LIST_ITERATOR] pfunc;
+!:          [1 fieldName "LIST_ITERATOR" =] [0.NOT_ALLOWED_FOR_LIST_ITERATOR] pfunc;
+fieldCount: [1 fieldName "LIST_ITERATOR" =] [0.NOT_ALLOWED_FOR_LIST_ITERATOR] pfunc;
+
+@:          [1 fieldName "LIST_RANGE" =] [0.NOT_ALLOWED_FOR_LIST_RANGE] pfunc;
+!:          [1 fieldName "LIST_RANGE" =] [0.NOT_ALLOWED_FOR_LIST_RANGE] pfunc;
+fieldCount: [1 fieldName "LIST_RANGE" =] [0.NOT_ALLOWED_FOR_LIST_RANGE] pfunc;
+
+@:          [1 fieldName "LIST" =] [0.NOT_ALLOWED_FOR_LIST] pfunc;
+!:          [1 fieldName "LIST" =] [0.NOT_ALLOWED_FOR_LIST] pfunc;
+fieldCount: [1 fieldName "LIST" =] [0.NOT_ALLOWED_FOR_LIST] pfunc;

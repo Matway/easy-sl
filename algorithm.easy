@@ -1,0 +1,216 @@
+"control" useFile
+"arrayRange" useFile
+
+max: [a:b:;; @a @b > [@a] [@b] if] func;
+min: [a:b:;; @a @b < [@a] [@b] if] func;
+
+range: [rangeByBuiltinList] func;
+range: [0 fieldName "RANGE" =] [.makeRange] pfunc;
+range: [0 fieldName "CONTAINER" =] [.makeRange] pfunc;
+
+append: [
+  r:c:;;
+  h:r': r.unhead;;
+  @h c.pushBack
+  r' c append
+] func;
+
+append: [drop .single] [
+  r:c:;;
+  r.first c.pushBack
+] pfunc;
+
+append: [drop .empty] [drop drop] pfunc;
+
+append: [drop 0 fieldName "RANGE" = ~] [
+  r:c:;;
+  r range c append
+] pfunc;
+
+find: [
+  findRange:findCondition:;;
+  findRes: findRange.firstIter;
+  findEnded: FALSE;
+  [findRes findRange.endIter = ~ findEnded ~ and] [
+    findRes.get @findCondition call [
+      TRUE !findEnded
+    ] [
+      findRes.next !findRes
+    ] if
+  ] while
+  findRes
+] func;
+
+find: [drop 0 fieldName "RANGE" = ~] [
+  findRange:findCondition:;;
+  findRange range @findCondition find
+] pfunc;
+
+removeIf: [
+  removeRange:removeCondition:;;
+  removeRes: removeRange.firstIter;
+  removeIt: removeRes;
+  [removeIt removeRange.endIter = ~] [
+    removeIt.get @removeCondition call ~ [
+      removeIt.get removeRes.set
+      removeRes.next !removeRes
+    ] when
+    removeIt.next !removeIt
+  ] while
+  removeRes
+] func;
+
+removeIf: [drop 0 fieldName "RANGE" = ~] [
+  removeRange:removeCondition:;;
+  removeRange.makeRange @removeCondition remove
+] pfunc;
+
+each: [
+  eachBody:; range [@eachBody call TRUE] enum
+] func;
+
+each: [drop 0 fieldName "RANGE" =] [
+  eachBody:; [@eachBody call TRUE] enum
+] pfunc;
+
+eachIter: [
+  eachBody:; range [@eachBody call TRUE] enumIter
+] func;
+
+eachIter: [drop 0 fieldName "RANGE" =] [
+  eachBody:; [@eachBody call TRUE] enumIter
+] pfunc;
+
+empty: [fieldCount 0 =] func;
+empty: [0 fieldName "RANGE" =] [.empty] pfunc;
+empty: [0 fieldName "CONTAINER" =] [.empty] pfunc;
+
+single: [fieldCount 1 =] func;
+single: [0 fieldName "RANGE" =] [.single] pfunc;
+single: [0 fieldName "CONTAINER" =] [.single] pfunc;
+
+map: [
+  mapContainer:mapBody:; copy;
+  mapContainer [it:; it.get @mapBody call it.set] eachIter
+  mapContainer
+] func;
+
+countIf: [
+  countIfContainer:countIfBody:;;
+  result: 0;
+  countIfContainer [@countIfBody call [result 1 + !result] when] each
+  result
+] func;
+
+max: [drop] func;
+max: [<] [nip] pfunc;
+
+min: [drop] func;
+min: [>] [nip] pfunc;
+
+foldl: [
+  foldlValue:foldlRange:foldlBody:;;;
+  foldlHead:foldlRange':foldlRange.unhead;;
+  @foldlValue @foldlHead @foldlBody call foldlRange' @foldlBody foldl
+] func;
+
+foldl: [
+  foldlValue:foldlRange:foldlBody:;;;
+  foldlRange.empty
+] [
+  foldlValue:foldlRange:foldlBody:;;;
+  @foldlValue
+] pfunc;
+
+foldr: [
+  foldrRange:foldrValue:foldrBody:;;;
+  foldrRange':foldrTail:foldrRange.untail;;
+  foldrRange.untail @foldrValue @foldrBody call @foldrBody foldr
+] func;
+
+foldr: [
+  foldrRange:foldrValue:foldrBody:;;;
+  foldrRange.empty
+] [
+  foldrRange:foldrValue:foldrBody:;;;
+  @foldrValue
+] pfunc;
+
+reduce: [
+  reduceBody:;
+  .unhead @reduceBody foldl
+] func;
+
+foldl: [
+  foldlValue:foldlRange:foldlBody:;;;
+  foldlRange 0 fieldName "RANGE" = ~
+] [
+  foldlValue:foldlRange:foldlBody:;;;
+  @foldlValue foldlRange.makeRange @foldlBody foldl
+] pfunc;
+
+foldr: [
+  foldrRange:foldrValue:foldrBody:;;;
+  foldrRange 0 fieldName "RANGE" = ~
+] [
+  foldrRange:foldrValue:foldrBody:;;;
+  foldrRange.makeRange @foldrValue @foldrBody foldr
+] pfunc;
+
+reduce: [
+  reduceRange:reduceBody:;;
+  reduceRange 0 fieldName "RANGE" = ~
+] [
+  reduceRange:reduceBody:;;
+  reduceRange.makeRange @reduceBody reduce
+] pfunc;
+
+foldl: [
+  foldlValue:foldlRange:foldlBody:;;;
+  foldlRange isPureList
+] [
+  foldlValue:foldlRange:foldlBody:;;;
+
+
+  i: 0;
+  [i foldlRange fieldCount <] [
+    @foldlValue i foldlRange @ @foldlBody call !foldlValue
+    i 1 + !i
+  ] while
+  @foldlValue
+] pfunc;
+
+foldr: [
+  foldrRange:foldrValue:foldrBody:;;;
+  foldrRange isPureList
+] [
+  foldrRange:foldrValue:foldrBody:;;;
+  i: foldrRange fieldCount 1 - ;
+  [i 0 < ~] [
+    @foldrValue i foldrRange @ @foldrBody call !foldrValue
+    i 1 - !i
+  ] while
+  @foldrValue
+] pfunc;
+
+reduce: [
+  reduceRange:reduceBody:;;
+  reduceRange isPureList
+] [
+  reduceRange:reduceBody:;;
+  reduceValue: 0 reduceRange @;
+  i: 1;
+  [i reduceRange fieldCount <] [
+    @reduceValue i reduceRange @ @reduceBody call !reduceValue
+    i 1 + !i
+  ] while
+  @reduceValue
+] pfunc;
+
+sort: [
+  range.sort
+] func;
+
+sort: [0 fieldName "RANGE" =] [
+  .sort
+] pfunc;

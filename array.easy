@@ -1,0 +1,153 @@
+"control" useFile
+"arrayRange" useFile
+
+Array: [{
+  CONTAINER: {};
+  ARRAY:{};
+
+  data: ();
+
+  empty: [data fieldCount 0 =] func;
+  single: [data fieldCount 1 =] func;
+
+  pushBack: [
+    element:;
+    data element , drop
+  ] func;
+
+  getSize: [
+    data fieldCount
+  ] func;
+
+  popBack: [
+    data untail drop drop
+  ] func;
+
+  shrink: [
+    newSize:;
+    [newSize getSize <] [
+      popBack
+    ] while
+  ] func;
+
+  enlarge: [
+    value:newSize:;;
+    [newSize getSize >] [
+      @value copy pushBack
+    ] while
+  ] func;
+
+  clear: [
+    () !data
+  ] func;
+
+  at: [
+    index:;
+    index data @
+  ] func;
+
+  set: [
+    value:index:;;
+    @value index @data !
+  ] func;
+
+  first: [0 data @] func;
+  last: [getSize 1 - data @] func;
+
+  firstIter: [data 0 ArrayInternal.makeIterator] func;
+  lastIter: [data getSize 1 - ArrayInternal.makeIterator] func;
+  endIter: [data getSize ArrayInternal.makeIterator] func;
+
+  makeRange: [
+    data 0 getSize ArrayInternal.makeRange
+  ] func;
+
+  makeRange: [empty] [() 0 0 ArrayInternal.makeRange] pfunc;
+}] func;
+
+enum: [drop 1 fieldName "ARRAY" =] [
+  enumArrayObject:enumArrayBody:;;
+  enumArrayObject.getSize 0 > [
+    i: 0;
+    [
+      i enumArrayObject.data @ @enumArrayBody call [
+        i 1 + !i i enumArrayObject.getSize <
+      ] [
+        FALSE
+      ] if
+    ] loop
+  ] when
+] pfunc;
+
+enumIter: [drop 1 fieldName "ARRAY" =] [
+  enumArrayObject:enumArrayBody:;;
+  enumArrayObject.getSize 0 > [
+    i: 0;
+    [
+      enumArrayObject.data i ArrayInternal.makeIterator @enumArrayBody call [
+        i 1 + !i i enumArrayObject.getSize <
+      ] [
+        FALSE
+      ] if
+    ] loop
+  ] when
+] pfunc;
+
+copy: [1 fieldName "ARRAY" =] [
+  src:;
+  dst: Array;
+  src [
+    copy dst.pushBack TRUE
+  ] enum
+  dst
+] pfunc;
+
+@:          [1 fieldName "ARRAY" =] [.at] pfunc;
+!:          [1 fieldName "ARRAY" =] [.set] pfunc;
+fieldCount: [1 fieldName "ARRAY" =] [.getSize] pfunc;
+
+=: [1 fieldName "ARRAY" =] [a1:a2:;;
+  a1.getSize a2.getSize =
+  [
+    ok: TRUE;
+    i: 0;
+    [i a1.getSize < ok and] [
+      i a1 @ i a2 @ = [i 1 + !i] [FALSE !ok] if
+    ] while
+    ok
+  ] [FALSE] if
+] pfunc;
+
+makeArray: [
+  value:count:;;
+  result: Array;
+  @value count result.enlarge
+  result
+] func;
+
+makeArrayByRange: [
+  .untail swap # t r'
+  result: makeArrayByRange; # t a
+  result.pushBack
+  result
+] func;
+
+makeArrayByRange: [.empty] [
+  drop
+  Array
+] pfunc;
+
+makeArray: [0 fieldName "RANGE" =] [
+  makeArrayByRange
+] pfunc;
+
+makeArray: [isPureList] [
+  list:;
+  result: Array;
+  i: 0;
+  [i list fieldCount <] [
+    i list @ result.pushBack
+    i 1 + !i
+  ] while
+  result
+] pfunc;

@@ -1,0 +1,330 @@
+"control" useFile
+
+PDQSortInternal: {
+  insertionSortThreshold: 24;
+  nintherThreshold: 128;
+  partialInsertionSortLimit: 8;
+  blockSize: 64;
+  cachelineSize: 64;
+
+  log2: [
+    n:;
+    result: 0;
+    [
+      n 1 rshift !n
+      n 0 > [result 1 + !result TRUE] [FALSE] if
+    ] loop
+
+    result
+  ] func;
+
+  insertionSort: [
+    begin:end:;;
+    begin end = ~ [
+      cur: begin.next;
+      [cur end = ~] [
+        sift: cur copy;
+        sift1: cur.prev;
+        sift.get sift1.get < [
+          tmp: sift.get;
+          [
+            sift1.get sift.set
+            sift.prev !sift
+            sift begin = [FALSE] [
+              sift1.prev !sift1
+              tmp sift1.get <
+            ] if
+          ] loop
+          tmp sift.set
+        ] when
+        cur.next !cur
+      ] while
+    ] when
+  ] func;
+
+  unguardedInsertionSort: [
+    begin:end:;;
+    begin end = ~ [
+      cur: begin.next;
+      [cur end = ~] [
+        sift: cur copy;
+        sift1: cur.prev;
+        sift.get sift1.get < [
+          tmp: sift.get;
+          [
+            sift1.get sift.set
+            sift.prev !sift
+            sift1.prev !sift1
+            tmp sift1.get <
+          ] loop
+          tmp sift.set
+        ] when
+        cur.next !cur
+      ] while
+    ] when
+  ] func;
+
+  partialInsertionSort: [
+    result: TRUE;
+    begin:end:;;    begin end = ~ [
+
+      limit: 0;
+      cur: begin.next;
+      continue: TRUE;
+      [cur end = ~ continue and] [
+        limit partialInsertionSortLimit > [
+          FALSE !result
+          FALSE !continue
+        ] [
+          sift: cur copy;
+          sift1: cur.prev;
+          sift.get sift1.get < [
+            tmp: sift.get;
+            [
+              sift1.get sift.set
+              sift.prev !sift
+              sift begin = [FALSE] [
+                sift1.prev !sift1
+                tmp sift1.get <
+              ] if
+            ] loop
+            tmp sift.set
+            limit cur sift - + !limit
+          ] when
+          cur.next !cur
+        ] if
+      ] while
+    ] when
+
+    result
+  ] func;
+
+  iterSwap: [
+    it1:it2:;;
+    tmp: it1.get;
+    it2.get it1.set
+    tmp it2.set
+  ] func;
+
+  sort2: [
+    it1:it2:;;
+    it2.get it1.get < [it1 it2 iterSwap] when
+  ] func;
+
+  sort3: [
+    it1:it2:it3:;;;
+    it1 it2 sort2
+    it2 it3 sort2
+    it1 it2 sort2
+  ] func;
+
+  alignCacheline: [
+    call 0 #todo
+  ] func;
+
+  swapOffsets: [
+    call 0 #todo
+  ] func;
+
+  partitionRightBranchless: [
+    call 0 #todo
+  ] func;
+
+  partitionRight: [
+    begin:end:;;
+    pivot: begin.get;
+    first: begin copy;
+    last: end copy;
+    [
+      first.next !first
+      first.get pivot <
+    ] loop
+
+    first.prev begin = [
+      [
+        first last < [
+          last.prev !last
+          last.get pivot < ~
+        ] [FALSE] if
+      ] loop
+    ] [
+      [
+        last.prev !last
+        last.get pivot < ~
+      ] loop
+    ] if
+
+    alreadyPartitioned: first last < ~;
+
+    [first last <] [
+      first last iterSwap
+      [
+        first.next !first
+        first.get pivot <
+      ] loop
+
+      [
+        last.prev !last
+        last.get pivot < ~
+      ] loop
+    ] while
+
+    pivotPos: first.prev;
+    pivotPos.get begin.set
+    pivot pivotPos.set
+
+    pivotPos
+    alreadyPartitioned
+  ] func;
+
+  partitionLeft: [
+    begin:end:;;
+    pivot: begin.get;
+    first: begin copy;
+    last: end copy;
+    [
+      last.prev !last
+      pivot last.get <
+    ] loop
+
+    last.next end = [
+      [
+        first last < [
+          first.next !first
+          pivot first.get < ~
+        ] [FALSE] if
+      ] loop
+    ] [
+      [
+        first.next !first
+        pivot first.get < ~
+      ] loop
+    ] if
+
+    [first last <] [
+      first last iterSwap
+      [
+        last.prev !last
+        pivot last.get <
+      ] loop
+
+      [
+        first.next !first
+        pivot first.get < ~
+      ] loop
+    ] while
+
+    pivotPos: last;
+    pivotPos.get begin.set
+    pivot pivotPos.set
+    pivotPos
+  ] func;
+
+  pdqSortLoop: [
+    begin:end:branchless:badAllowed:leftmost:;;;;;
+
+    [
+      size: end begin -;
+      size insertionSortThreshold < [
+        begin end leftmost [insertionSort] [unguardedInsertionSort] if
+        FALSE
+      ] [
+        s2: size 2 /;
+        size nintherThreshold > [
+          begin            begin s2 +       end 1 -          sort3
+          begin 1 +        begin s2 1 - +   end 2 -          sort3
+          begin 2 +        begin s2 1 + +   end 3 -          sort3
+          begin s2 1 - +   begin s2 +       begin s2 1 + +   sort3
+          begin begin s2 + iterSwap
+        ] [
+          begin s2 + begin end 1 - sort3
+        ] if
+
+
+        leftmost [FALSE] [begin.prev.get begin.get < ~] if [
+          begin end partitionLeft.next !begin
+          TRUE
+        ] [
+          pivotPos: alreadyPartitioned: begin end branchless [partitionRightBranchless] [partitionRight] if;;
+          lSize: pivotPos begin -;
+          rSize: end pivotPos 1 + -;
+          highlyUnbalanced: lSize size 8 / < rSize size 8 / < or;
+          highlyUnbalanced [
+            badAllowed 1 - !badAllowed
+            badAllowed 0 = [
+              begin end ArrayInternal.makeRange.heapSort
+              FALSE
+            ] [
+              lSize insertionSortThreshold < ~ [
+                begin           begin lSize 4 / + iterSwap
+                pivotPos 1 - pivotPos lSize 4 / - iterSwap
+
+                lSize nintherThreshold > [
+                  begin 1 +       begin lSize 4 / 1 + + iterSwap
+                  begin 2 +       begin lSize 4 / 2 + + iterSwap
+                  pivotPos 2 - pivotPos lSize 4 / 1 + - iterSwap
+                  pivotPos 3 - pivotPos lSize 4 / 2 + - iterSwap
+                ] when
+              ] when
+
+              rSize insertionSortThreshold < ~ [
+                pivotPos 1 + pivotPos rSize 4 / 1 + + iterSwap
+                end 1 -           end rSize 4 / -     iterSwap
+
+                rSize nintherThreshold > [
+                  pivotPos 2 + pivotPos rSize 4 / 2 + + iterSwap
+                  pivotPos 3 + pivotPos rSize 4 / 3 + + iterSwap
+                  end 2 -           end rSize 4 / 1 + - iterSwap
+                  end 3 -           end rSize 4 / 2 + - iterSwap
+                ] when
+              ] when
+              TRUE
+            ] if
+          ] [
+            alreadyPartitioned [
+              begin pivotPos partialInsertionSort [
+                pivotPos.next end partialInsertionSort ~
+              ] [
+                TRUE
+              ] if
+            ] [
+              TRUE
+            ] if
+          ] if [
+            begin pivotPos branchless badAllowed leftmost pdqSortLoop
+            pivotPos.next !begin
+            FALSE !leftmost
+            TRUE
+          ] [
+            FALSE
+          ] if
+        ] if
+      ] if
+    ] loop
+  ] func;
+
+  pdqsort: [
+    begin:end:;;
+    begin
+    end
+    FALSE
+    begin end - log2
+    TRUE
+    pdqSortLoop
+  ] func;
+
+  pdqsort_branchless: [
+    begin:end:;;
+    begin
+    end
+    TRUE
+    begin end - log2
+    TRUE
+    pdqSortLoop
+  ] func;
+};
+
+pdqsort: [0 fieldName "ITERATOR" =] [PDQSortInternal.pdqsort] pfunc;
+pdqsort: [0 fieldName "RANGE" =] [r:; r.firstIter r.endIter PDQSortInternal.pdqsort] pfunc;
+pdqsort_branchless: [0 fieldName "ITERATOR" =] [PDQSortInternal.pdqsort_branchless] pfunc;
+pdqsort_branchless: [0 fieldName "RANGE" =] [r:; r.firstIter r.endIter PDQSortInternal.pdqsort_branchless] pfunc;

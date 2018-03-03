@@ -1,0 +1,158 @@
+"control" useFile
+
+ForwardListInternal: {
+  INTERNAL: {};
+
+  makeNodeWithNext: [{
+    FORWARD_LIST_NODE: {};
+    value:next:;;
+  }] func;
+
+  makeNode: [() makeNodeWithNext] func;
+
+  insertBetween: [
+    node1:node2:newNode:;;;
+    node2 newNode.!next
+    newNode node1.!next
+  ] func;
+
+  eraseNodeAfter: [
+    node:;
+    node.next.next node.!next
+    () node.next.!next
+  ] func;
+
+  insertAfter: [
+    newNode: node:;;
+    node node.next newNode insertBetween
+  ] func;
+
+  makeIterator: [{
+    ITERATOR: {};
+    FORWARD_LIST_ITERATOR: {};
+
+    node:;
+    get: [node.@value] func;
+    set: [node.!value] func;
+    next: [node.next ForwardListInternal.makeIterator] func;
+    eraseAfter: [node ForwardListInternal.eraseNodeAfter () !node] func;
+    insertAfter: [ForwardListInternal.makeNode node ForwardListInternal.insertAfter] func;
+    isLast: [node.next () same] func;
+  }] func;
+
+  makeRange: [{
+    RANGE: {};
+    FORWARD_LIST_RANGE: {};
+
+    firstIter:;
+    first: [firstIter.get] func;
+    empty: [firstIter.node () same] func;
+    single: [empty [FALSE] [firstIter.node.next () same] if] func;
+    unheadIter: [empty ~] [firstIter firstIter.next ForwardListInternal.makeRange] pfunc;
+    unhead: [empty ~] [firstIter.get firstIter.next ForwardListInternal.makeRange] pfunc;
+    makeRange: [firstIter ForwardListInternal.makeRange] func;
+  }] func;
+
+  flEnumIter: [enumIterRange:enumIterRangeBody:;; enumIterRange.unheadIter swap @enumIterRangeBody call [@enumIterRangeBody enumIter] [drop] if] func;
+  flEnumIter: [drop .single] [enumIterRangeBody:; .firstIter enumIterRangeBody call drop] pfunc;
+  flEnumIter: [drop .empty] [drop drop] pfunc;
+  flEnum: [enumRangeBody:; [.get @enumRangeBody call] enumIter] func;
+};
+
+ForwardList: [{
+  CONTAINER: {};
+  FORWARD_LIST: {};
+
+  root: ();
+  empty: [() root same] func;
+  single: [empty [FALSE] [root.next () same] if] func;
+
+  pushFront: [root ForwardListInternal.makeNodeWithNext !root] func;
+  popFront: [empty ~] [
+    current: root;
+    root.next !root
+    () current.!next
+  ] pfunc;
+
+  first: [empty ~] [root.@value] pfunc;
+  firstIter: [root ForwardListInternal.makeIterator] func;
+  makeRange: [firstIter ForwardListInternal.makeRange] func;
+  clear: [popFront clear] func;
+  clear: [empty] [] pfunc;
+
+  insertAfterIter: [1 fieldName "FORWARD_LIST_ITERATOR" =] [
+    .insertAfter
+  ] pfunc;
+
+  eraseAfterIter: [1 fieldName "FORWARD_LIST_ITERATOR" =] [
+    .eraseAfter
+  ] pfunc;
+
+  DIE: [
+    clear
+  ];
+}] func;
+
+copy: [1 fieldName "FORWARD_LIST" =] [
+  t:;
+  t.makeRange makeForwardList
+] pfunc;
+
+makeForwardList: [
+  value:count:;;
+  result: ForwardList;
+  [count 0 >] [
+    @value copy result.pushFront
+    count 1 - !count
+  ] while
+
+  result
+] func;
+
+makeForwardListByRange: [
+  .unhead # h r'
+  result: makeForwardListByRange; # h l
+  result.pushFront
+  result
+] func;
+
+makeForwardListByRange: [.empty] [
+  drop
+  ForwardList
+] pfunc;
+
+makeForwardList: [0 fieldName "RANGE" =] [
+  makeForwardListByRange
+] pfunc;
+
+makeForwardList: [isPureList] [
+  list:;
+  result: ForwardList;
+  i: list fieldCount 1 -;
+  [i 0 < ~] [
+    i list @ result.pushFront
+    i 1 - !i
+  ] while
+  result
+] pfunc;
+
+=: [1 fieldName "FORWARD_LIST_ITERATOR" =] [
+  .node swap .node is
+] pfunc;
+
+enumIter: [drop 1 fieldName "FORWARD_LIST_RANGE" =] [ForwardListInternal.flEnumIter] pfunc;
+enum:     [drop 1 fieldName "FORWARD_LIST_RANGE" =] [ForwardListInternal.flEnum]     pfunc;
+enumIter: [drop 1 fieldName "FORWARD_LIST" =] [enumBody:; .makeRange @enumBody ForwardListInternal.flEnumIter] pfunc;
+enum:     [drop 1 fieldName "FORWARD_LIST" =] [enumBody:; .makeRange @enumBody ForwardListInternal.flEnum]     pfunc;
+
+@:          [1 fieldName "FORWARD_LIST_ITERATOR" =] [0.NOT_ALLOWED_FOR_FORWARD_LIST_ITERATOR] pfunc;
+!:          [1 fieldName "FORWARD_LIST_ITERATOR" =] [0.NOT_ALLOWED_FOR_FORWARD_LIST_ITERATOR] pfunc;
+fieldCount: [1 fieldName "FORWARD_LIST_ITERATOR" =] [0.NOT_ALLOWED_FOR_FORWARD_LIST_ITERATOR] pfunc;
+
+@:          [1 fieldName "FORWARD_LIST_RANGE" =] [0.NOT_ALLOWED_FOR_FORWARD_LIST_RANGE] pfunc;
+!:          [1 fieldName "FORWARD_LIST_RANGE" =] [0.NOT_ALLOWED_FOR_FORWARD_LIST_RANGE] pfunc;
+fieldCount: [1 fieldName "FORWARD_LIST_RANGE" =] [0.NOT_ALLOWED_FOR_FORWARD_LIST_RANGE] pfunc;
+
+@:          [1 fieldName "FORWARD_LIST" =] [0.NOT_ALLOWED_FOR_FORWARD_LIST] pfunc;
+!:          [1 fieldName "FORWARD_LIST" =] [0.NOT_ALLOWED_FOR_FORWARD_LIST] pfunc;
+fieldCount: [1 fieldName "FORWARD_LIST" =] [0.NOT_ALLOWED_FOR_FORWARD_LIST] pfunc;
