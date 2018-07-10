@@ -228,9 +228,9 @@ enum:     [drop 1 fieldName "ARRAY_RANGE" =] [ArrayInternal.arrayEnum]     pfunc
 !:          [1 fieldName "ARRAY_RANGE" =] [.set] pfunc;
 fieldCount: [1 fieldName "ARRAY_RANGE" =] [.getSize] pfunc;
 
-@:          [1 fieldName "ARRAY_ITERATOR" =] [0.NOT_ALLOWED_FOR_ARRAY_ITERATOR] pfunc;
-!:          [1 fieldName "ARRAY_ITERATOR" =] [0.NOT_ALLOWED_FOR_ARRAY_ITERATOR] pfunc;
-fieldCount: [1 fieldName "ARRAY_ITERATOR" =] [0.NOT_ALLOWED_FOR_ARRAY_ITERATOR] pfunc;
+@:          [1 fieldName "ARRAY_ITERATOR" =] [0 .NOT_ALLOWED_FOR_ARRAY_ITERATOR] pfunc;
+!:          [1 fieldName "ARRAY_ITERATOR" =] [0 .NOT_ALLOWED_FOR_ARRAY_ITERATOR] pfunc;
+fieldCount: [1 fieldName "ARRAY_ITERATOR" =] [0 .NOT_ALLOWED_FOR_ARRAY_ITERATOR] pfunc;
 
 =: [
   it1:it2:;;

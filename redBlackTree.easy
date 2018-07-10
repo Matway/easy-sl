@@ -977,14 +977,14 @@ makeRedBlackTree: [isPureList] [
   result
 ] pfunc;
 
-@:          [1 fieldName "RED_BLACK_TREE_ITERATOR" =] [0.NOT_ALLOWED_FOR_RED_BLACK_TREE_ITERATOR] pfunc;
-!:          [1 fieldName "RED_BLACK_TREE_ITERATOR" =] [0.NOT_ALLOWED_FOR_RED_BLACK_TREE_ITERATOR] pfunc;
-fieldCount: [1 fieldName "RED_BLACK_TREE_ITERATOR" =] [0.NOT_ALLOWED_FOR_RED_BLACK_TREE_ITERATOR] pfunc;
+@:          [1 fieldName "RED_BLACK_TREE_ITERATOR" =] [0 .NOT_ALLOWED_FOR_RED_BLACK_TREE_ITERATOR] pfunc;
+!:          [1 fieldName "RED_BLACK_TREE_ITERATOR" =] [0 .NOT_ALLOWED_FOR_RED_BLACK_TREE_ITERATOR] pfunc;
+fieldCount: [1 fieldName "RED_BLACK_TREE_ITERATOR" =] [0 .NOT_ALLOWED_FOR_RED_BLACK_TREE_ITERATOR] pfunc;
 
-@:          [1 fieldName "RED_BLACK_TREE_RANGE" =] [0.NOT_ALLOWED_FOR_RED_BLACK_TREE_RANGE] pfunc;
-!:          [1 fieldName "RED_BLACK_TREE_RANGE" =] [0.NOT_ALLOWED_FOR_RED_BLACK_TREE_RANGE] pfunc;
-fieldCount: [1 fieldName "RED_BLACK_TREE_RANGE" =] [0.NOT_ALLOWED_FOR_RED_BLACK_TREE_RANGE] pfunc;
+@:          [1 fieldName "RED_BLACK_TREE_RANGE" =] [0 .NOT_ALLOWED_FOR_RED_BLACK_TREE_RANGE] pfunc;
+!:          [1 fieldName "RED_BLACK_TREE_RANGE" =] [0 .NOT_ALLOWED_FOR_RED_BLACK_TREE_RANGE] pfunc;
+fieldCount: [1 fieldName "RED_BLACK_TREE_RANGE" =] [0 .NOT_ALLOWED_FOR_RED_BLACK_TREE_RANGE] pfunc;
 
-@:          [1 fieldName "RED_BLACK_TREE" =] [.find ~ [drop 0.INVALID_KEY] when] pfunc;
-!:          [1 fieldName "RED_BLACK_TREE" =] [.findIter ~ [drop drop 0.INVALID_KEY] [.set] if] pfunc;
-fieldCount: [1 fieldName "RED_BLACK_TREE" =] [0.NOT_ALLOWED_FOR_RED_BLACK_TREE] pfunc;
+@:          [1 fieldName "RED_BLACK_TREE" =] [.find ~ [drop 0 .INVALID_KEY] when] pfunc;
+!:          [1 fieldName "RED_BLACK_TREE" =] [.findIter ~ [drop drop 0 .INVALID_KEY] [.set] if] pfunc;
+fieldCount: [1 fieldName "RED_BLACK_TREE" =] [0 .NOT_ALLOWED_FOR_RED_BLACK_TREE] pfunc;

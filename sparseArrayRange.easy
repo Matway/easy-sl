@@ -236,9 +236,9 @@ enum:     [drop 1 fieldName "SPARSE_ARRAY_RANGE" =] [SparseArrayInternal.arrayEn
 !:          [1 fieldName "SPARSE_ARRAY_RANGE" =] [.set] pfunc;
 fieldCount: [1 fieldName "SPARSE_ARRAY_RANGE" =] [.getSize] pfunc;
 
-@:          [1 fieldName "SPARSE_ARRAY_ITERATOR" =] [0.NOT_ALLOWED_FOR_ARRAY_ITERATOR] pfunc;
-!:          [1 fieldName "SPARSE_ARRAY_ITERATOR" =] [0.NOT_ALLOWED_FOR_ARRAY_ITERATOR] pfunc;
-fieldCount: [1 fieldName "SPARSE_ARRAY_ITERATOR" =] [0.NOT_ALLOWED_FOR_ARRAY_ITERATOR] pfunc;
+@:          [1 fieldName "SPARSE_ARRAY_ITERATOR" =] [0 .NOT_ALLOWED_FOR_ARRAY_ITERATOR] pfunc;
+!:          [1 fieldName "SPARSE_ARRAY_ITERATOR" =] [0 .NOT_ALLOWED_FOR_ARRAY_ITERATOR] pfunc;
+fieldCount: [1 fieldName "SPARSE_ARRAY_ITERATOR" =] [0 .NOT_ALLOWED_FOR_ARRAY_ITERATOR] pfunc;
 
 =: [
   it1:it2:;;

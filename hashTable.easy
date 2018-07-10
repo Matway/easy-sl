@@ -321,14 +321,14 @@ enum:     [drop 1 fieldName "HASH_TABLE_RANGE" =] [HashTableInternal.htEnum]    
 enumIter: [drop 1 fieldName "HASH_TABLE" =] [enumBody:; .makeRange @enumBody HashTableInternal.htEnumIter] pfunc;
 enum:     [drop 1 fieldName "HASH_TABLE" =] [enumBody:; .makeRange @enumBody HashTableInternal.htEnum]     pfunc;
 
-@:          [1 fieldName "HASH_TABLE_ITERATOR" =] [0.NOT_ALLOWED_FOR_HASH_TABLE_ITERATOR] pfunc;
-!:          [1 fieldName "HASH_TABLE_ITERATOR" =] [0.NOT_ALLOWED_FOR_HASH_TABLE_ITERATOR] pfunc;
-fieldCount: [1 fieldName "HASH_TABLE_ITERATOR" =] [0.NOT_ALLOWED_FOR_HASH_TABLE_ITERATOR] pfunc;
+@:          [1 fieldName "HASH_TABLE_ITERATOR" =] [0 .NOT_ALLOWED_FOR_HASH_TABLE_ITERATOR] pfunc;
+!:          [1 fieldName "HASH_TABLE_ITERATOR" =] [0 .NOT_ALLOWED_FOR_HASH_TABLE_ITERATOR] pfunc;
+fieldCount: [1 fieldName "HASH_TABLE_ITERATOR" =] [0 .NOT_ALLOWED_FOR_HASH_TABLE_ITERATOR] pfunc;
 
-@:          [1 fieldName "HASH_TABLE_RANGE" =] [0.NOT_ALLOWED_FOR_HASH_TABLE_RANGE] pfunc;
-!:          [1 fieldName "HASH_TABLE_RANGE" =] [0.NOT_ALLOWED_FOR_HASH_TABLE_RANGE] pfunc;
-fieldCount: [1 fieldName "HASH_TABLE_RANGE" =] [0.NOT_ALLOWED_FOR_HASH_TABLE_RANGE] pfunc;
+@:          [1 fieldName "HASH_TABLE_RANGE" =] [0 .NOT_ALLOWED_FOR_HASH_TABLE_RANGE] pfunc;
+!:          [1 fieldName "HASH_TABLE_RANGE" =] [0 .NOT_ALLOWED_FOR_HASH_TABLE_RANGE] pfunc;
+fieldCount: [1 fieldName "HASH_TABLE_RANGE" =] [0 .NOT_ALLOWED_FOR_HASH_TABLE_RANGE] pfunc;
 
-@:          [1 fieldName "HASH_TABLE" =] [.find ~ [drop 0.INVALID_KEY] when] pfunc;
-!:          [1 fieldName "HASH_TABLE" =] [.findIter ~ [drop drop 0.INVALID_KEY] [.set] if] pfunc;
+@:          [1 fieldName "HASH_TABLE" =] [.find ~ [drop 0 .INVALID_KEY] when] pfunc;
+!:          [1 fieldName "HASH_TABLE" =] [.findIter ~ [drop drop 0 .INVALID_KEY] [.set] if] pfunc;
 fieldCount: [1 fieldName "HASH_TABLE" =] [.getSize] pfunc;

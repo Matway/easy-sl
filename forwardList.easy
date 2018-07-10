@@ -145,14 +145,14 @@ enum:     [drop 1 fieldName "FORWARD_LIST_RANGE" =] [ForwardListInternal.flEnum]
 enumIter: [drop 1 fieldName "FORWARD_LIST" =] [enumBody:; .makeRange @enumBody ForwardListInternal.flEnumIter] pfunc;
 enum:     [drop 1 fieldName "FORWARD_LIST" =] [enumBody:; .makeRange @enumBody ForwardListInternal.flEnum]     pfunc;
 
-@:          [1 fieldName "FORWARD_LIST_ITERATOR" =] [0.NOT_ALLOWED_FOR_FORWARD_LIST_ITERATOR] pfunc;
-!:          [1 fieldName "FORWARD_LIST_ITERATOR" =] [0.NOT_ALLOWED_FOR_FORWARD_LIST_ITERATOR] pfunc;
-fieldCount: [1 fieldName "FORWARD_LIST_ITERATOR" =] [0.NOT_ALLOWED_FOR_FORWARD_LIST_ITERATOR] pfunc;
+@:          [1 fieldName "FORWARD_LIST_ITERATOR" =] [0 .NOT_ALLOWED_FOR_FORWARD_LIST_ITERATOR] pfunc;
+!:          [1 fieldName "FORWARD_LIST_ITERATOR" =] [0 .NOT_ALLOWED_FOR_FORWARD_LIST_ITERATOR] pfunc;
+fieldCount: [1 fieldName "FORWARD_LIST_ITERATOR" =] [0 .NOT_ALLOWED_FOR_FORWARD_LIST_ITERATOR] pfunc;
 
-@:          [1 fieldName "FORWARD_LIST_RANGE" =] [0.NOT_ALLOWED_FOR_FORWARD_LIST_RANGE] pfunc;
-!:          [1 fieldName "FORWARD_LIST_RANGE" =] [0.NOT_ALLOWED_FOR_FORWARD_LIST_RANGE] pfunc;
-fieldCount: [1 fieldName "FORWARD_LIST_RANGE" =] [0.NOT_ALLOWED_FOR_FORWARD_LIST_RANGE] pfunc;
+@:          [1 fieldName "FORWARD_LIST_RANGE" =] [0 .NOT_ALLOWED_FOR_FORWARD_LIST_RANGE] pfunc;
+!:          [1 fieldName "FORWARD_LIST_RANGE" =] [0 .NOT_ALLOWED_FOR_FORWARD_LIST_RANGE] pfunc;
+fieldCount: [1 fieldName "FORWARD_LIST_RANGE" =] [0 .NOT_ALLOWED_FOR_FORWARD_LIST_RANGE] pfunc;
 
-@:          [1 fieldName "FORWARD_LIST" =] [0.NOT_ALLOWED_FOR_FORWARD_LIST] pfunc;
-!:          [1 fieldName "FORWARD_LIST" =] [0.NOT_ALLOWED_FOR_FORWARD_LIST] pfunc;
-fieldCount: [1 fieldName "FORWARD_LIST" =] [0.NOT_ALLOWED_FOR_FORWARD_LIST] pfunc;
+@:          [1 fieldName "FORWARD_LIST" =] [0 .NOT_ALLOWED_FOR_FORWARD_LIST] pfunc;
+!:          [1 fieldName "FORWARD_LIST" =] [0 .NOT_ALLOWED_FOR_FORWARD_LIST] pfunc;
+fieldCount: [1 fieldName "FORWARD_LIST" =] [0 .NOT_ALLOWED_FOR_FORWARD_LIST] pfunc;

@@ -230,14 +230,14 @@ makeList: [isPureList] [
   result
 ] pfunc;
 
-@:          [1 fieldName "LIST_ITERATOR" =] [0.NOT_ALLOWED_FOR_LIST_ITERATOR] pfunc;
-!:          [1 fieldName "LIST_ITERATOR" =] [0.NOT_ALLOWED_FOR_LIST_ITERATOR] pfunc;
-fieldCount: [1 fieldName "LIST_ITERATOR" =] [0.NOT_ALLOWED_FOR_LIST_ITERATOR] pfunc;
+@:          [1 fieldName "LIST_ITERATOR" =] [0 .NOT_ALLOWED_FOR_LIST_ITERATOR] pfunc;
+!:          [1 fieldName "LIST_ITERATOR" =] [0 .NOT_ALLOWED_FOR_LIST_ITERATOR] pfunc;
+fieldCount: [1 fieldName "LIST_ITERATOR" =] [0 .NOT_ALLOWED_FOR_LIST_ITERATOR] pfunc;
 
-@:          [1 fieldName "LIST_RANGE" =] [0.NOT_ALLOWED_FOR_LIST_RANGE] pfunc;
-!:          [1 fieldName "LIST_RANGE" =] [0.NOT_ALLOWED_FOR_LIST_RANGE] pfunc;
-fieldCount: [1 fieldName "LIST_RANGE" =] [0.NOT_ALLOWED_FOR_LIST_RANGE] pfunc;
+@:          [1 fieldName "LIST_RANGE" =] [0 .NOT_ALLOWED_FOR_LIST_RANGE] pfunc;
+!:          [1 fieldName "LIST_RANGE" =] [0 .NOT_ALLOWED_FOR_LIST_RANGE] pfunc;
+fieldCount: [1 fieldName "LIST_RANGE" =] [0 .NOT_ALLOWED_FOR_LIST_RANGE] pfunc;
 
-@:          [1 fieldName "LIST" =] [0.NOT_ALLOWED_FOR_LIST] pfunc;
-!:          [1 fieldName "LIST" =] [0.NOT_ALLOWED_FOR_LIST] pfunc;
-fieldCount: [1 fieldName "LIST" =] [0.NOT_ALLOWED_FOR_LIST] pfunc;
+@:          [1 fieldName "LIST" =] [0 .NOT_ALLOWED_FOR_LIST] pfunc;
+!:          [1 fieldName "LIST" =] [0 .NOT_ALLOWED_FOR_LIST] pfunc;
+fieldCount: [1 fieldName "LIST" =] [0 .NOT_ALLOWED_FOR_LIST] pfunc;

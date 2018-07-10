@@ -11,7 +11,7 @@ BitSet: [{
   at: [
     index:;
     index 0 < index getSize < ~ or [
-      0.INVALID_INDEX
+      0 .INVALID_INDEX
     ] when
 
     subIndex: index 5 rshift;
@@ -40,13 +40,13 @@ BitSet: [{
 
   all: [
     lastBits: getSize 31 and;
-    lastMask: lastBits 0 = [-1n32] [1n32 lastBits lshift 1n32 -] if;
+    lastMask: lastBits 0 = [0xFFFFFFFFn32] [1n32 lastBits lshift 1n32 -] if;
     TRUE
     dataSize 0 > [
       dataSize 1 > [
         i: 0;
         [
-          i data @ -1n32 = [
+          i data @ 0xFFFFFFFFn32 = [
             i 1 + !i i dataSize 1 - <
           ] [
             drop FALSE FALSE
@@ -73,7 +73,7 @@ BitSet: [{
     subIndex: index 5 rshift;
     bit: index 31 and;
     mask: 1n32 bit lshift;
-    subIndex data @ value [mask or] [-1n32 mask - and] if subIndex data !
+    subIndex data @ value [mask or] [0xFFFFFFFFn32 mask - and] if subIndex data !
   ] pfunc;
 
   or=: [
